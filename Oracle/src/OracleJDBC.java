@@ -64,10 +64,17 @@ public class OracleJDBC {
 	}
 	
 	private static void initialInsertion() {
-		// From the JDBC application, insert 20.000 lineitem tuples (remember to meet the insertion rules in Appendix B). Measure the time (i.e., store the time before and after the insertion script).
+		// From the JDBC application, insert 20.000 lineitem tuples (remember to meet the insertion rules in Appendix B). 
+		// Measure the time (i.e., store the time before and after the insertion script).
 		System.out.println("-------- Initial insertion ------");
+		InitialInserter inserter = new InitialInserter();
 		Date initialDate = new Date();
 	
+		try {
+			inserter.initialInsert(connection);
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
 		
 		Date finishDate = new Date();
 		Long timeDifference = finishDate.getTime() - initialDate.getTime();

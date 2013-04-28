@@ -16,16 +16,18 @@ public class InitialInserter {
 	private List<Integer> regionIds = new ArrayList<Integer>();
 	private List<Integer> nationIds = new ArrayList<Integer>();
 	private List<Integer> partIds = new ArrayList<Integer>();
+	private List<Integer> supplierIds = new ArrayList<Integer>();
 	
 	public void initialInsert(Connection connection) throws SQLException {
 		connection.setAutoCommit(false);
 		System.out.println("-------- Initial insertion ------");
 		
-		PreparedStatement[] statements = new PreparedStatement[3];
+		PreparedStatement[] statements = new PreparedStatement[4];
 		try {
 			statements[0] = insertRegions(connection);
 			statements[1] = insertNations(connection);
 			statements[2] = insertParts(connection);
+			statements[3] = insertSuppliers(connection);
 			
 			Date startDate = new Date();
 			for (PreparedStatement statement : statements) {
@@ -56,21 +58,30 @@ public class InitialInserter {
 		return sum;
 	}
 	
+	private String getRandomString(int size) {
+		String result = "";
+		for (int i = 0; i < size/2; ++i) {
+			int number = random.nextInt(20);
+			char chara = (char) ('a' + number);
+			result += chara;
+		}
+		return result;
+	}
+	
 	private PreparedStatement insertRegions(Connection connection) throws SQLException {
 		PreparedStatement preparedStatement = null;
 		String insertSQL = "INSERT INTO region(R_RegionKey, R_Name, R_Comment, skip) " +
 				"VALUES (?,?,?,?)";
 		preparedStatement = connection.prepareStatement(insertSQL);
 		
-		
 		for (int i = 1; i <= 5; ++i) {
 			Integer id = getRandomInteger();
 			while(regionIds.contains(id)) id = getRandomInteger();
 			regionIds.add(id);
 			preparedStatement.setInt(1, id);
-			preparedStatement.setString(2, "12345678901234567890123456789012");
-			preparedStatement.setString(3, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-			preparedStatement.setString(4, "12345678901234567890123456789012");
+			preparedStatement.setString(2, getRandomString(64));
+			preparedStatement.setString(3, getRandomString(160));
+			preparedStatement.setString(4, getRandomString(64));
 			preparedStatement.addBatch();
 		}
 		
@@ -88,11 +99,11 @@ public class InitialInserter {
 			while(nationIds.contains(id)) id = getRandomInteger();
 			nationIds.add(id);
 			preparedStatement.setInt(1, id);
-			preparedStatement.setString(2, "12345678901234567890123456789012");
+			preparedStatement.setString(2, getRandomString(64));
 			Integer regionId = regionIds.get(random.nextInt(regionIds.size()));
 			preparedStatement.setInt(3,  regionId);
-			preparedStatement.setString(4, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-			preparedStatement.setString(5, "12345678901234567890123456789012");
+			preparedStatement.setString(4, getRandomString(160));
+			preparedStatement.setString(5, getRandomString(64));
 			preparedStatement.addBatch();
 		}
 		
@@ -111,15 +122,40 @@ public class InitialInserter {
 			while(partIds.contains(id)) id = getRandomInteger();
 			partIds.add(id);
 			preparedStatement.setInt(1, id);
-			preparedStatement.setString(2, "12345678901234567890123456789012");
-			preparedStatement.setString(3, "12345678901234567890123456789012");
-			preparedStatement.setString(4, "12345678901234567890123456789012");
-			preparedStatement.setString(5, "12345678901234567890123456789012");
+			preparedStatement.setString(2, getRandomString(64));
+			preparedStatement.setString(3, getRandomString(64));
+			preparedStatement.setString(4, getRandomString(64));
+			preparedStatement.setString(5, getRandomString(64));
 			preparedStatement.setInt(6,  getRandomInteger());
-			preparedStatement.setString(7, "12345678901234567890123456789012");
+			preparedStatement.setString(7, getRandomString(64));
 			preparedStatement.setDouble(8, getRandomDouble(13));
-			preparedStatement.setString(9, "12345678901234567890123456789012");
-			preparedStatement.setString(10, "12345678901234567890123456789012");
+			preparedStatement.setString(9, getRandomString(64));
+			preparedStatement.setString(10, getRandomString(64));
+			preparedStatement.addBatch();
+		}
+		
+		return preparedStatement;
+	}
+	
+	private PreparedStatement insertSuppliers(Connection connection) throws SQLException {
+		PreparedStatement preparedStatement = null;
+		String insertSQL = "INSERT INTO supplier(S_SuppKey, S_Name, S_Address, S_NationKey, S_Phone, S_AcctBal, S_Comment, skip) " +
+				"VALUES (?,?,?,?,?,?,?,?)";
+		preparedStatement = connection.prepareStatement(insertSQL);
+		
+		int maxValues = (int) (SF * 10000);
+		for (int i = 1; i <= maxValues; ++i) {
+			Integer id = getRandomInteger();
+			while(supplierIds.contains(id)) id = getRandomInteger();
+			supplierIds.add(id);
+			preparedStatement.setInt(1, id);
+			preparedStatement.setString(2, getRandomString(64));
+			preparedStatement.setString(3, getRandomString(64));
+			preparedStatement.setInt(4,  nationIds.get(random.nextInt(nationIds.size())));
+			preparedStatement.setString(5, getRandomString(18));
+			preparedStatement.setDouble(6, getRandomDouble(13));
+			preparedStatement.setString(7, getRandomString(105));
+			preparedStatement.setString(8, getRandomString(64));
 			preparedStatement.addBatch();
 		}
 		

@@ -1,6 +1,7 @@
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Date;
 
 
 public class OracleJDBC {
@@ -19,6 +20,8 @@ public class OracleJDBC {
 		}
 		
 		if (!connect()) return;
+		
+		initialInsertion();
 	}
 
 	private static boolean checkForDriver() {
@@ -26,11 +29,11 @@ public class OracleJDBC {
 		try {
 			Class.forName("oracle.jdbc.driver.OracleDriver");
 		} catch (ClassNotFoundException e) {
-			System.out.println("Where is your Oracle JDBC Driver?");
+			System.out.println("Where is your Oracle JDBC Driver?\n");
 			e.printStackTrace();
 			return false;
 		}
-		System.out.println("Oracle JDBC Driver Found!");
+		System.out.println("Oracle JDBC Driver Found!\n");
 		return true;
 	}
 	
@@ -51,13 +54,24 @@ public class OracleJDBC {
 		try {
 			connection = DriverManager.getConnection(
 					"jdbc:oracle:thin:@oraclefib.fib.upc.es:1521/ORABD", username, password);
-			System.out.println("Connection succeeded");
+			System.out.println("Connection succeeded\n");
 		} catch (SQLException e) {
 			System.out.println("Connection Failed! Check output console");
 			e.printStackTrace();
 			return false;
 		}
-		return true;
+		return connection != null;
+	}
+	
+	private static void initialInsertion() {
+		// From the JDBC application, insert 20.000 lineitem tuples (remember to meet the insertion rules in Appendix B). Measure the time (i.e., store the time before and after the insertion script).
+		System.out.println("-------- Initial insertion ------");
+		Date initialDate = new Date();
+	
+		
+		Date finishDate = new Date();
+		Long timeDifference = finishDate.getTime() - initialDate.getTime();
+		System.out.println("Insertion took " + timeDifference + " milliseconds.\n");
 	}
 
 }

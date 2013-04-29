@@ -65,7 +65,7 @@ public class OracleJDBC {
 	private static void initialInsertion() {
 		// From the JDBC application, insert 20.000 lineitem tuples (remember to meet the insertion rules in Appendix B). 
 		// Measure the time (i.e., store the time before and after the insertion script).
-		InitialInserter inserter = new InitialInserter();
+		DataInserter inserter = new DataInserter();
 		try {
 			inserter.initialInsert(connection);
 		} catch (SQLException e) {

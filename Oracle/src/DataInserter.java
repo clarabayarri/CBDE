@@ -313,10 +313,17 @@ public class DataInserter {
 			preparedStatement.setString(10, getRandomString(64));
 			preparedStatement.setDate(11, getRandomDate());
 			preparedStatement.setDate(12, getRandomDate());
-			preparedStatement.setDate(13, getRandomDate());
+			if (random.nextInt(20) != 0)
+				preparedStatement.setDate(13, getRandomDate());
+			else
+				preparedStatement.setNull(13, java.sql.Types.DATE);
 			preparedStatement.setString(14, getRandomString(64));
 			preparedStatement.setString(15, getRandomString(64));
-			preparedStatement.setString(16, getRandomString(64));
+			if (random.nextInt(20) != 0)
+				preparedStatement.setString(16, getRandomString(64));
+			else
+				preparedStatement.setNull(16, java.sql.Types.VARCHAR);
+			
 			preparedStatement.setString(17, getRandomString(64));
 			preparedStatement.addBatch();
 		}

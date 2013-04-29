@@ -9,8 +9,9 @@ public class OracleJDBC {
 	private static String password;
 	
 	private static Connection connection;
+	private static DataInserter inserter = new DataInserter();
 
-	public static void main(String[] argv) {
+	public static void main(String[] argv) throws InterruptedException {
 		
 		if (!checkForDriver()) return;
 		if (!loadParameters(argv)) {
@@ -21,6 +22,10 @@ public class OracleJDBC {
 		if (!connect()) return;
 		
 		initialInsertion();
+		
+		// SQL
+		
+		secondInsertion();
 	}
 
 	private static boolean checkForDriver() {
@@ -65,9 +70,18 @@ public class OracleJDBC {
 	private static void initialInsertion() {
 		// From the JDBC application, insert 20.000 lineitem tuples (remember to meet the insertion rules in Appendix B). 
 		// Measure the time (i.e., store the time before and after the insertion script).
-		DataInserter inserter = new DataInserter();
 		try {
 			inserter.initialInsert(connection);
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+	
+	private static void secondInsertion() {
+		// Insert 20.000 lineitem tuples more (do not drop the previous inserted tuples and meet the insertion rules in Appendix B) 
+		// and measure the insertion time again.
+		try {
+			inserter.secondInsert(connection);
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}

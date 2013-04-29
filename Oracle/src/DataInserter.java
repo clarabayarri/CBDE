@@ -54,9 +54,37 @@ public class DataInserter {
 		}
 	}
 	
+	public void secondInsert(Connection connection) throws SQLException {
+		connection.setAutoCommit(false);
+		System.out.println("-------- Second insertion ------");
+		
+		PreparedStatement[] statements = new PreparedStatement[6];
+		try {
+			statements[0] = insertParts(connection);
+			statements[1] = insertSuppliers(connection);
+			statements[2] = insertPartSuppliers(connection);
+			statements[3] = insertCustomers(connection);
+			statements[4] = insertOrders(connection);
+			statements[5] = insertLineItems(connection);
+			
+			Date startDate = new Date();
+			for (PreparedStatement statement : statements) {
+				statement.executeBatch();
+			}
+			connection.commit();
+			
+			Date endDate = new Date();
+			Long timeDifference = endDate.getTime() - startDate.getTime();
+			System.out.println("Insertion took " + timeDifference + " milliseconds.\n");
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+			connection.rollback();
+		}
+	}
+	
 	private Integer getRandomInteger() {
 		// int must have 4 digits
-		return random.nextInt(10000 - 1000) + 1000;
+		return random.nextInt(100000 - 1000) + 1000;
 	}
 	
 	private double getRandomDouble(int x) {
@@ -243,7 +271,7 @@ public class DataInserter {
 			while(orderIds.contains(id)) id = getRandomInteger();
 			orderIds.add(id);
 			preparedStatement.setInt(1, id);
-			preparedStatement.setInt(2, customerIds.get(random.nextInt(customerIds.size()*2/3)));
+			preparedStatement.setInt(2, customerIds.get(random.nextInt(customerIds.size())));
 			preparedStatement.setString(3, getRandomString(64));
 			preparedStatement.setInt(4, getRandomInteger());
 			preparedStatement.setDate(5, getRandomDate());

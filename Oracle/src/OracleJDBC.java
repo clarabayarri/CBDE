@@ -10,6 +10,7 @@ public class OracleJDBC {
 	
 	private static Connection connection;
 	private static DataInserter inserter = new DataInserter();
+	private static QuerySet querySet = new QuerySet();
 
 	public static void main(String[] argv) throws InterruptedException {
 		
@@ -23,9 +24,11 @@ public class OracleJDBC {
 		
 		initialInsertion();
 		
-		// SQL
-		
+		executeQueries();
+				
 		secondInsertion();
+		
+		executeQueries();
 	}
 
 	private static boolean checkForDriver() {
@@ -75,6 +78,15 @@ public class OracleJDBC {
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}
+	}
+	
+	private static void executeQueries() {
+		try {
+			querySet.executeQueries(connection);
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+		
 	}
 	
 	private static void secondInsertion() {

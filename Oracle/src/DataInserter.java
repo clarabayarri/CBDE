@@ -2,7 +2,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,8 +109,10 @@ public class DataInserter {
 	}
 	
 	private java.sql.Date getRandomDate() {
-		Date date = new Date();
-		return new java.sql.Date(date.getTime());
+		Calendar calendar = new GregorianCalendar();
+		calendar.setTime(new Date());
+		calendar.add(Calendar.DAY_OF_YEAR, random.nextInt(10000)-5000);
+		return new java.sql.Date(calendar.getTimeInMillis());
 	}
 	
 	private PreparedStatement insertRegions(Connection connection) throws SQLException {

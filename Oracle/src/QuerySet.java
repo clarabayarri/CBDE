@@ -12,6 +12,7 @@ import java.util.List;
 public class QuerySet {
 
 	public void executeQueries(Connection connection) throws SQLException {
+		connection.setAutoCommit(false);
 		System.out.println("-------- Queries ------");
 
 		PreparedStatement statements[] = { 
@@ -26,13 +27,15 @@ public class QuerySet {
 			for (int j = 0; j < 5; ++j) {
 				Date startDate = new Date();
 				statements[i].executeBatch();
+				connection.commit();
 				Date endDate = new Date();
 
 				timeDifferences.add(j, endDate.getTime() - startDate.getTime());
 			}
-
-			System.out.println("Query" + (i + 1) + " took "	+ Collections.min(timeDifferences)
-					+ " milliseconds as per minimum.\n");
+			
+			System.out.println("Query" + (i + 1) + " took {" + timeDifferences.get(0) + ", " + timeDifferences.get(1) + ", " +
+					 timeDifferences.get(2) + ", " + timeDifferences.get(3) + ", " + timeDifferences.get(4) + 
+					"} --- with minimum " + Collections.min(timeDifferences));
 		}
 	}
 

@@ -263,7 +263,7 @@ public class DataInserter {
 			preparedStatement.setInt(1, id);
 			preparedStatement.setString(2, getRandomString(64));
 			preparedStatement.setString(3, getRandomString(64));
-			preparedStatement.setInt(4, getRandomInteger());
+			preparedStatement.setInt(4, nationIds.get(random.nextInt(nationIds.size())));
 			preparedStatement.setString(5, getRandomString(64));
 			preparedStatement.setDouble(6, getRandomDouble(13));
 			// With probability 0.1, set the value to be queried

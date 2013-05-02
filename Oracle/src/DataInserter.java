@@ -126,7 +126,11 @@ public class DataInserter {
 			while(regionIds.contains(id)) id = getRandomInteger();
 			regionIds.add(id);
 			preparedStatement.setInt(1, id);
-			preparedStatement.setString(2, getRandomString(64));
+			// Set one of the region names to the queried value
+			if (i == 1) 
+				preparedStatement.setString(2, "12345678901234567890123456789012");
+			else
+				preparedStatement.setString(2, getRandomString(64));
 			preparedStatement.setString(3, getRandomString(160));
 			preparedStatement.setString(4, getRandomString(64));
 			preparedStatement.addBatch();
@@ -172,8 +176,16 @@ public class DataInserter {
 			preparedStatement.setString(2, getRandomString(64));
 			preparedStatement.setString(3, getRandomString(64));
 			preparedStatement.setString(4, getRandomString(64));
-			preparedStatement.setString(5, getRandomString(64));
-			preparedStatement.setInt(6,  getRandomInteger());
+			// With probability 0.1, set the value to be queried
+			if (random.nextInt(10) == 0) {
+				preparedStatement.setString(5, "12345678901234567890123456789012");
+				preparedStatement.setInt(6, 1000);
+			}
+			else { 
+				preparedStatement.setString(5, getRandomString(64));
+				preparedStatement.setInt(6,  getRandomInteger());
+			}
+				
 			preparedStatement.setString(7, getRandomString(64));
 			preparedStatement.setDouble(8, getRandomDouble(13));
 			preparedStatement.setString(9, getRandomString(64));
@@ -254,7 +266,11 @@ public class DataInserter {
 			preparedStatement.setInt(4, getRandomInteger());
 			preparedStatement.setString(5, getRandomString(64));
 			preparedStatement.setDouble(6, getRandomDouble(13));
-			preparedStatement.setString(7, getRandomString(64));
+			// With probability 0.1, set the value to be queried
+			if (random.nextInt(10) == 0)
+				preparedStatement.setString(7, "12345678901234567890123456789012");
+			else
+				preparedStatement.setString(7, getRandomString(64));
 			preparedStatement.setString(8, getRandomString(120));
 			preparedStatement.setString(9, getRandomString(64));
 			preparedStatement.addBatch();
@@ -278,7 +294,13 @@ public class DataInserter {
 			preparedStatement.setInt(2, customerIds.get(random.nextInt(customerIds.size())));
 			preparedStatement.setString(3, getRandomString(64));
 			preparedStatement.setInt(4, getRandomInteger());
-			preparedStatement.setDate(5, getRandomDate());
+			// With probability 0.05, set the date to be queried
+			if (random.nextInt(20) == 0) {
+				Calendar calendar = new GregorianCalendar(2013,4,29);
+				preparedStatement.setDate(5, new java.sql.Date(calendar.getTime().getTime()));
+			}
+			else
+				preparedStatement.setDate(5, getRandomDate());
 			preparedStatement.setString(6, getRandomString(15));
 			preparedStatement.setString(7, getRandomString(64));
 			preparedStatement.setInt(8,getRandomInteger());
@@ -315,7 +337,13 @@ public class DataInserter {
 			preparedStatement.setDouble(8, getRandomDouble(13));
 			preparedStatement.setString(9, getRandomString(64));
 			preparedStatement.setString(10, getRandomString(64));
-			preparedStatement.setDate(11, getRandomDate());
+			// With probability 0.05, set the date to Apr 30 2013
+			if (random.nextInt(20) == 0) {
+				Calendar calendar = new GregorianCalendar(2013,4,30);
+				preparedStatement.setDate(11, new java.sql.Date(calendar.getTime().getTime()));
+			}
+			else
+				preparedStatement.setDate(11, getRandomDate());
 			preparedStatement.setDate(12, getRandomDate());
 			if (random.nextInt(20) != 0)
 				preparedStatement.setDate(13, getRandomDate());

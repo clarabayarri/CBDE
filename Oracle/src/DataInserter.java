@@ -322,7 +322,7 @@ public class DataInserter {
 		int maxValues = (int) (SF * 6000000);
 		for (int i = 1; i <= maxValues; ++i) {
 			Integer id = orderIds.get(random.nextInt(orderIds.size()));
-			if (lineItemIds.get(id) == null) lineItemIds.put(id, 0);
+			if (lineItemIds.get(id) == null) lineItemIds.put(id, 1000);
 			Integer lineId = lineItemIds.get(id) + 1;
 			lineItemIds.put(id, lineId);
 			preparedStatement.setInt(1, id);

@@ -1,0 +1,82 @@
+WITH PRIMARY KEYS --> 51,875% ocupat
+
+-------- Initial insertion ------
+Insertion took 1687 milliseconds.
+
+-------- Queries ------
+Query1 took [576051, 456203, 531073, 589461, 546996] in nanoseconds --- with minimum 456203
+Query2 took [648406, 615162, 551188, 640305, 590578] in nanoseconds --- with minimum 551188
+Query3 took [546159, 578007, 496152, 534704, 551747] in nanoseconds --- with minimum 496152
+Query4 took [466260, 538057, 495593, 489447, 487212] in nanoseconds --- with minimum 466260
+-------- Second insertion ------
+Insertion took 1656 milliseconds.
+
+-------- Queries ------
+Query1 took [836420, 544203, 618235, 542527, 545320] in nanoseconds --- with minimum 542527
+Query2 took [510400, 565715, 588343, 543365, 540851] in nanoseconds --- with minimum 510400
+Query3 took [570743, 591137, 539175, 599517, 541131] in nanoseconds --- with minimum 539175
+Query4 took [569626, 542527, 534705, 542248, 550349] in nanoseconds --- with minimum 534705
+
+-----------------------------------------------------------------------------------------------------------
+WITHOUT PRIMARY KEYS --> 44,84375% ocupat
+
+-------- Initial insertion ------
+Insertion took 1265 milliseconds.
+
+-------- Queries ------
+Query1 took [704559, 631085, 594769, 595048, 578286] in nanoseconds --- with minimum 578286
+Query2 took [611250, 518781, 591137, 575212, 559848] in nanoseconds --- with minimum 518781
+Query3 took [557334, 592254, 595047, 568229, 608178] in nanoseconds --- with minimum 557334
+Query4 took [509562, 538337, 557333, 590299, 548114] in nanoseconds --- with minimum 509562
+-------- Second insertion ------
+Insertion took 1266 milliseconds.
+
+-------- Queries ------
+Query1 took [850108, 588902, 666844, 562362, 569625] in nanoseconds --- with minimum 562362
+Query2 took [549511, 656229, 557054, 641701, 591416] in nanoseconds --- with minimum 549511
+Query3 took [493638, 577168, 593092, 560686, 578007] in nanoseconds --- with minimum 493638
+Query4 took [560965, 498387, 496153, 495315, 629969] in nanoseconds --- with minimum 495315
+
+--> Amb PK empitjora bastant el temps d'inserció i no millora substancialment el temps de query
+
+-----------------------------------------------------------------------------------------------------------
+Bitmap sobre lineitem l_suppkey --> 45,46875% ocupat
+
+-------- Initial insertion ------
+Insertion took 1266 milliseconds.
+
+-------- Queries ------
+Query1 took [753727, 556775, 490006, 537220, 542248] in nanoseconds --- with minimum 490006
+Query2 took [542247, 536940, 544762, 530235, 547556] in nanoseconds --- with minimum 530235
+Query3 took [542248, 537778, 490007, 438883, 439720] in nanoseconds --- with minimum 438883
+Query4 took [468216, 493638, 488610, 536940, 442794] in nanoseconds --- with minimum 442794
+-------- Second insertion ------
+Insertion took 1265 milliseconds.
+
+-------- Queries ------
+Query1 took [766578, 538895, 482743, 535263, 597841] in nanoseconds --- with minimum 482743
+Query2 took [498666, 579962, 570464, 555936, 576889] in nanoseconds --- with minimum 498666
+Query3 took [630527, 584152, 594209, 545600, 634718] in nanoseconds --- with minimum 545600
+Query4 took [601473, 598680, 568508, 510121, 582197] in nanoseconds --- with minimum 510121
+
+-----------------------------------------------------------------------------------------------------------
+B+ A l_shipdate --> 49,84375%ocupat
+
+-------- Initial insertion ------
+Insertion took 2000 milliseconds.
+
+-------- Queries ------
+Query1 took [761550, 608457, 688914, 597842, 707911] in nanoseconds --- with minimum 597842
+Query2 took [719365, 606501, 704279, 598959, 592255] in nanoseconds --- with minimum 592255
+Query3 took [694502, 626895, 673550, 692267, 613207] in nanoseconds --- with minimum 613207
+Query4 took [572978, 630248, 667403, 584432, 584990] in nanoseconds --- with minimum 572978
+-------- Second insertion ------
+Insertion took 1640 milliseconds.
+
+-------- Queries ------
+Query1 took [854298, 578286, 606222, 579404, 592533] in nanoseconds --- with minimum 578286
+Query2 took [747023, 621867, 519620, 495593, 567111] in nanoseconds --- with minimum 495593
+Query3 took [535542, 590578, 559289, 589740, 521296] in nanoseconds --- with minimum 521296
+Query4 took [568508, 547555, 593371, 587784, 545880] in nanoseconds --- with minimum 545880
+
+--> Amb B+ no millora res. 

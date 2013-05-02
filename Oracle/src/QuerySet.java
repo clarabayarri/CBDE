@@ -3,7 +3,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 public class QuerySet {
@@ -22,17 +21,16 @@ public class QuerySet {
 		for (int i = 0; i < statements.length; ++i) {
 			List<Long> timeDifferences = new ArrayList<Long>();
 			for (int j = 0; j < 5; ++j) {
-				Date startDate = new Date();
+				Long start = System.nanoTime();
 				statements[i].executeBatch();
 				connection.commit();
-				Date endDate = new Date();
+				Long end = System.nanoTime();
 
-				timeDifferences.add(j, endDate.getTime() - startDate.getTime());
+				timeDifferences.add(j, end-start);
 			}
 			
-			System.out.println("Query" + (i + 1) + " took {" + timeDifferences.get(0) + ", " + timeDifferences.get(1) + ", " +
-					 timeDifferences.get(2) + ", " + timeDifferences.get(3) + ", " + timeDifferences.get(4) + 
-					"} --- with minimum " + Collections.min(timeDifferences));
+			System.out.println("Query" + (i + 1) + " took " + timeDifferences + 
+					" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
 		}
 	}
 

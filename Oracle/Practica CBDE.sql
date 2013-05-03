@@ -134,6 +134,15 @@ PCTFREE 0 ENABLE ROW MOVEMENT;
 ALTER TABLE name SHRINK SPACE;
 create index ind_1 on atr_2_nt(cand, edat) pctfree 33;
 
+-- Cluster
+CREATE CLUSTER cluster_name (a1 type) PCTFREE 33; 
+CREATE INDEX index_name ON CLUSTER cluster_name PCTFREE 33; 
+CREATE TABLE table_name1 (...,a2 type,...) 
+  CLUSTER cluster_name(a2); 
+CREATE TABLE table_name2 (...,a3 type,...) 
+  CLUSTER cluster_name(a3); 
+-- Insertions 
+ALTER INDEX index_name REBUILD;
 
 
 -- Bitmap

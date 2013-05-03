@@ -13,7 +13,7 @@ import java.util.Random;
 
 public class DataInserter {
 
-	private Random random = new Random();
+	private Random random = new Random(3l);
 	
 	private float SF = 0.00333333f;
 	

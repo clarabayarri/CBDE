@@ -1,0 +1,101 @@
+CREATE TABLE customer(
+    C_CustKey int NULL,
+    C_Name varchar2(64) NULL,
+    C_Address varchar2(64) NULL,
+    C_NationKey int NULL,
+    C_Phone varchar2(64) NULL,
+    C_AcctBal number(13, 2) NULL,
+    C_MktSegment varchar2(64) NULL,
+    C_Comment varchar2(120) NULL,
+    skip varchar2(64) NULL
+);
+
+-- Per query 1 i 3
+--CREATE CLUSTER shipdate (L_ShipDate date) PCTFREE 33;
+--CREATE INDEX lineitemInd ON CLUSTER shipdate PCTFREE 33; 
+CREATE TABLE lineitem(
+    L_OrderKey int NULL,
+    L_PartKey int NULL,
+    L_SuppKey int NULL,
+    L_LineNumber int NULL,
+    L_Quantity int NULL,
+    L_ExtendedPrice number(13, 2) NULL,
+    L_Discount number(13, 2) NULL,
+    L_Tax number(13, 2) NULL,
+    L_ReturnFlag varchar2(64) NULL,
+    L_LineStatus varchar2(64) NULL,
+    L_ShipDate date NULL,
+    L_CommitDate date NULL,
+    L_ReceiptDate date NULL,
+    L_ShipInstruct varchar2(64) NULL,
+    L_ShipMode varchar2(64) NULL,
+    L_Comment varchar2(64) NULL,
+    skip varchar2(64) NULL
+)
+--CLUSTER shipdate(L_shipdate)
+;
+
+CREATE TABLE nation(
+    N_NationKey int NULL,
+    N_Name varchar2(64) NULL,
+    N_RegionKey int NULL,
+    N_Comment varchar2(160) NULL,
+    skip varchar2(64) NULL
+);
+
+-- per query 3 i 4
+CREATE CLUSTER orderdate (O_OrderDate date) PCTFREE 33;
+CREATE INDEX ordersInd ON CLUSTER orderdate PCTFREE 33; 
+CREATE TABLE orders(
+    O_OrderKey int NULL,
+    O_CustKey int NULL,
+    O_OrderStatus varchar2(64) NULL,
+    O_TotalPrice number(13, 2) NULL,
+    O_OrderDate date NULL,
+    O_OrderPriority varchar2(15) NULL,
+    O_Clerk varchar2(64) NULL,
+    O_ShipPriority int NULL,
+    O_Comment varchar2(80) NULL,
+    skip varchar2(64) NULL
+)
+CLUSTER orderdate(O_OrderDate);
+
+CREATE TABLE part(
+    P_PartKey int NULL,
+    P_Name varchar2(64) NULL,
+    P_Mfgr varchar2(64) NULL,
+    P_Brand varchar2(64) NULL,
+    P_Type varchar2(64) NULL,
+    P_Size int NULL,
+    P_Container varchar2(64) NULL,
+    P_RetailPrice number(13, 2) NULL,
+    P_Comment varchar2(64) NULL,
+    skip varchar2(64) NULL
+);
+
+CREATE TABLE partsupp(
+    PS_PartKey int NULL,
+    PS_SuppKey int NULL,
+    PS_AvailQty int NULL,
+    PS_SupplyCost number(13, 2) NULL,
+    PS_Comment varchar2(200) NULL,
+    skip varchar2(64) NULL
+);
+
+CREATE TABLE region(
+    R_RegionKey int NULL,
+    R_Name varchar2(64) NULL,
+    R_Comment varchar2(160) NULL,
+    skip varchar2(64) NULL
+);
+
+CREATE TABLE supplier(
+    S_SuppKey int NULL,
+    S_Name varchar2(64) NULL,
+    S_Address varchar2(64) NULL,
+    S_NationKey int NULL,
+    S_Phone varchar2(18) NULL,
+    S_AcctBal number(13, 2) NULL,
+    S_Comment varchar2(105) NULL,
+    skip varchar2(64) NULL
+);

@@ -21,6 +21,9 @@ public class MongoNormalized {
 			return;
 		}
 		
+		// Drop previous data
+		database.dropDatabase();
+		
 		dataInserter.initialInsert(database);
 		
 		// query
@@ -33,7 +36,7 @@ public class MongoNormalized {
 	
 	public static DB getMongoDB() throws UnknownHostException {
 		MongoClient mongoClient = new MongoClient( "localhost" , 27017 );
-		DB db = mongoClient.getDB( "cbde" );
+		DB db = mongoClient.getDB( "cbde-normalized" );
 		return db;
 	}
 }

@@ -18,6 +18,7 @@ public class QuerySet {
 			query4(connection)
 		};
 
+		Long average = (long) 0;
 		for (int i = 0; i < statements.length; ++i) {
 			List<Long> timeDifferences = new ArrayList<Long>();
 			for (int j = 0; j < 5; ++j) {
@@ -31,7 +32,9 @@ public class QuerySet {
 			
 			System.out.println("Query" + (i + 1) + " took " + timeDifferences + 
 					" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
+			average += Collections.min(timeDifferences);
 		}
+		System.out.println("\nAverage query time " + average/statements.length + " in nanoseconds\n");
 	}
 
 	public PreparedStatement query1(Connection connection) throws SQLException {

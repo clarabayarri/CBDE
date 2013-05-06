@@ -103,7 +103,7 @@ public class DataInserter {
 	
 	private Date getRandomDate() {
 		Calendar calendar = new GregorianCalendar();
-		calendar.setTime(new Date());
+		calendar.set(2013, 4, 30);
 		calendar.add(Calendar.DAY_OF_YEAR, random.nextInt(10000)-5000);
 		return calendar.getTime();
 	}

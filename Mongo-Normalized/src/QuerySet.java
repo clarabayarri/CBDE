@@ -64,32 +64,32 @@ public class QuerySet {
 		Calendar calendar = new GregorianCalendar(2013,5,1);
 		
 		// create our pipeline operations, first with the $match
-		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("l_shipdate", new BasicDBObject("$lt", new java.sql.Date(calendar.getTime().getTime()))));
+		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("$L_ShipDate", new BasicDBObject("$lt", new java.sql.Date(calendar.getTime().getTime()))));
 
 		// Now the $group operation
-		BasicDBObject groupFields = new BasicDBObject( "l_returnflag", "$l_returnflag" );
-		groupFields.put( "l_linestatus", "$l_linestatus" );
+		BasicDBObject groupFields = new BasicDBObject( "L_ReturnFlag", "$L_ReturnFlag" );
+		groupFields.put( "L_LineStatus", "$L_LineStatus" );
 		groupFields = new BasicDBObject( "_id", groupFields);
 		
-//		groupFields.put("l_returnflag", "$l_returnflag");
-//		groupFields.put("l_linestatus", "$l_linestatus");
+//		groupFields.put("L_ReturnFlag", "$L_ReturnFlag");
+//		groupFields.put("L_LineStatus", "$L_LineStatus");
 		
-		groupFields.put("sum_qty", new BasicDBObject( "$sum", "$l_quantity"));
-		groupFields.put("sum_base_price", new BasicDBObject( "$sum", "$l_extendedprice"));
-		groupFields.put("sum_disc_price", new BasicDBObject( "$sum", "$l_extendedprice*(1-$l_discount)"));
-		groupFields.put("sum_charge", new BasicDBObject( "$sum", "$l_extendedprice*(1-$l_discount)*(1+$l_tax)"));
+		groupFields.put("sum_qty", new BasicDBObject( "$sum", "$L_Quantity"));
+		groupFields.put("sum_base_price", new BasicDBObject( "$sum", "$L_ExtendedPrice"));
+		groupFields.put("sum_disc_price", new BasicDBObject( "$sum", "$L_ExtendedPrice*(1-$L_Discount)"));
+		groupFields.put("sum_charge", new BasicDBObject( "$sum", "$L_ExtendedPrice*(1-$L_Discount)*(1+$L_Tax)"));
 		
-		groupFields.put("avg_qty", new BasicDBObject( "$avg", "$l_quantity"));
-		groupFields.put("avg_price", new BasicDBObject( "$avg", "$l_extendedprice"));
-		groupFields.put("avg_disc", new BasicDBObject( "$avg", "$l_discount"));
+		groupFields.put("avg_qty", new BasicDBObject( "$avg", "$L_Quantity"));
+		groupFields.put("avg_price", new BasicDBObject( "$avg", "$L_ExtendedPrice"));
+		groupFields.put("avg_disc", new BasicDBObject( "$avg", "$L_Discount"));
 		
 		groupFields.put("count_order", new BasicDBObject( "$sum", 1));
 		
 		BasicDBObject group = new BasicDBObject("$group", groupFields);
 		
 		//in sorting 1 is ASC -1 is DESC
-		BasicDBObject sortFields = new BasicDBObject( "l_returnflag", 1 );
-		sortFields.put( "l_linestatus", 1 );
+		BasicDBObject sortFields = new BasicDBObject( "L_ReturnFlag", 1 );
+		sortFields.put( "L_LineStatus", 1 );
 		
 		BasicDBObject sort = new BasicDBObject( "$sort", sortFields);
 		

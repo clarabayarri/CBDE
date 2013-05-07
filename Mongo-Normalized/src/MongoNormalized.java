@@ -10,6 +10,8 @@ public class MongoNormalized {
 	
 	private static DataInserter dataInserter = new DataInserter();
 	
+	private static QuerySet querySet = new QuerySet(); 
+	
 	public static void main(String[] argv) throws Exception {
 		System.out.println("--------- GOOD DAY MONGO-NORMALIZED!!! ----------\n");
 		
@@ -26,11 +28,11 @@ public class MongoNormalized {
 		
 		dataInserter.initialInsert(database);
 		
-		// query
+		querySet.executeQueries(database);
 		
 		dataInserter.secondInsert(database);
 		
-		// query
+		querySet.executeQueries(database);
 		
 	}
 	

@@ -2,10 +2,17 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 
 
 
@@ -13,80 +20,203 @@ public class QuerySet {
 
 	public void executeQueries(DB database)  {
 		System.out.println("-------- Queries ------");
-		List<BasicDBObject> queries = new ArrayList<BasicDBObject>();
-		queries.add(query1(database));
 		
 		Long average = (long) 0;
-		for (int i = 0; i < queries.size(); ++i) {
-			List<Long> timeDifferences = new ArrayList<Long>();
-			for (int j = 0; j < 5; ++j) {
-				Long start = System.nanoTime();
-				database.command(queries.get(i));
-				Long end = System.nanoTime();
+		List<Long> timeDifferences = new ArrayList<Long>();
+		for (int j = 0; j < 5; ++j) {
+			Long start = System.nanoTime();
+			query1(database);
+			Long end = System.nanoTime();
 
-				timeDifferences.add(j, end-start);
-			}
-			
-			System.out.println("Query" + (i + 1) + " took " + timeDifferences + 
-					" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
-			average += Collections.min(timeDifferences);
+			timeDifferences.add(j, end-start);
 		}
-		System.out.println("\nAverage query time " + average/queries.size() + " in nanoseconds\n");
+
+		System.out.println("Query 1 took " + timeDifferences + 
+				" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
+		average += Collections.min(timeDifferences);
 		
+		timeDifferences = new ArrayList<Long>();
+		for (int j = 0; j < 5; ++j) {
+			Long start = System.nanoTime();
+			query2(database);
+			Long end = System.nanoTime();
+
+			timeDifferences.add(j, end-start);
+		}
+
+		System.out.println("Query 2 took " + timeDifferences + 
+				" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
+		average += Collections.min(timeDifferences);
+		
+		
+		System.out.println("\nAverage query time " + average/4 + " in nanoseconds\n");
+
 	}
 
-	private BasicDBObject query1(DB database) {
-		BasicDBObject cmdBody = new BasicDBObject("aggregate", "lineitem");
-		ArrayList<BasicDBObject> pipeline = new ArrayList<BasicDBObject>(); 
+	private void query1(DB database) {
 		//els mesos comencen en 0
 		Calendar calendar = new GregorianCalendar(2013,03,30);
-		
+
 		// create our pipeline operations, first with the $match
 		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("L_ShipDate", new BasicDBObject("$lte", calendar.getTime())));
 
-		// Now the $group operation
-		BasicDBObject groupFields = new BasicDBObject( "L_ReturnFlag", "$L_ReturnFlag" );
-		groupFields.put( "L_LineStatus", "$L_LineStatus" );
-		groupFields.put("L_ShipDate", "$L_ShipDate");
-		groupFields = new BasicDBObject( "_id", groupFields);
-				
-		groupFields.put("sum_qty", new BasicDBObject( "$sum", "$L_Quantity"));
-		groupFields.put("sum_base_price", new BasicDBObject( "$sum", "$L_ExtendedPrice"));
-//		--------------------------------------------------------------------------------------------------------------------
-//		groupFields.put("sum_disc_price", new BasicDBObject( "$sum", "$L_ExtendedPrice*(1-$L_Discount)"));
-//		groupFields.put("sum_charge", new BasicDBObject( "$sum", "$L_ExtendedPrice*(1-$L_Discount)*(1+$L_Tax)"));
-//		--------------------------------------------------------------------------------------------------------------------
-		groupFields.put("avg_qty", new BasicDBObject( "$avg", "$L_Quantity"));
-		groupFields.put("avg_price", new BasicDBObject( "$avg", "$L_ExtendedPrice"));
-		groupFields.put("avg_disc", new BasicDBObject( "$avg", "$L_Discount"));
+		BasicDBObject fields = new BasicDBObject("L_ReturnFlag", 1);
+		fields.put("L_LineStatus", 1);
+		fields.put("L_ShipDate", 1);
+		fields.put("L_Quantity", 1);
+		fields.put("L_ExtendedPrice", 1);
+		fields.put("L_ReturnFlag", 1);
+		fields.put("L_Tax", 1);
+		fields.put("L_Discount", 1);
+		fields.put("_id", 0);
+		BasicDBObject project = new BasicDBObject("$project", fields );
 		
-		groupFields.put("count_order", new BasicDBObject( "$sum", 1));
+		BasicDBObject sortFields = new BasicDBObject( "L_ReturnFlag", 1 );
+		sortFields.put("L_LineStatus", 1 );
 
-		BasicDBObject group = new BasicDBObject("$group", groupFields);
-		
-		//in sorting 1 is ASC -1 is DESC
-		BasicDBObject sortFields = new BasicDBObject( "_id", 1 );
-		
 		BasicDBObject sort = new BasicDBObject( "$sort", sortFields);
+
+		DBCollection myColl = database.getCollection("lineitem");
+		AggregationOutput out = myColl.aggregate(match, project, sort);
 		
-		pipeline.add(match);
-	    pipeline.add(group);
-	    pipeline.add(sort);
-	
-	    cmdBody.put("pipeline", pipeline);
-//	    DBCollection myColl = database.getCollection("lineitem");
-//	    AggregationOutput out = myColl.aggregate(match, group, sort);
+		Map<String, BasicDBObject> result = new LinkedHashMap<String, BasicDBObject>();
+		for (DBObject object : out.results()) {
+			String key = object.get("L_ReturnFlag").toString() + " - " + object.get("L_LineStatus");
+			BasicDBObject group = result.get(key);
+			if (group == null) {
+				group = new BasicDBObject();
+				group.put("L_ReturnFlag", object.get("L_ReturnFlag"));
+				group.put("L_LineStatus", object.get("L_LineStatus"));
+				group.put("sum_qty", 0);
+				group.put("sum_base_price", 0);
+				group.put("sum_disc_price", 0);
+				group.put("sum_charge", 0);
+				group.put("count_order", 0);
+				group.put("sum_discount", 0);
+			}
+			int discount = new Integer(object.get("L_Quantity").toString());
+			int sumQuantity = group.getInt("sum_qty") + discount;
+			group.put("sum_qty", sumQuantity);
+			
+			double extendedPrice = new Double(object.get("L_ExtendedPrice").toString());
+			double sumExtended = group.getDouble("sum_base_price") + extendedPrice;
+			group.put("sum_base_price", sumExtended);
+			
+			double sum_disc_price = group.getDouble("sum_disc_price") + (extendedPrice * (1-discount));
+			group.put("sum_disc_price", sum_disc_price);
+			
+			double tax = new Double(object.get("L_Tax").toString());
+			double sum_charge = group.getDouble("sum_charge") + (extendedPrice * (1-discount) * (1 + tax));
+			group.put("sum_charge", sum_charge);
+			
+			int num_elements = group.getInt("count_order") + 1;
+			group.put("count_order", num_elements);
+			
+			int sum_discount = group.getInt("sum_discount") + discount;
+			group.put("sum_discount", sum_discount);
+			
+			result.put(key, group);
+		}
+		
+		for (String key : result.keySet()) {
+			BasicDBObject group = result.get(key);
+			double average_quantity = group.getDouble("sum_qty") / group.getDouble("count_order");
+			group.put("avg_qty", average_quantity);
+			
+			double average_extended = group.getDouble("sum_base_price") / group.getDouble("count_order");
+			group.put("avg_price", average_extended);
+			
+			double average_discount = group.getDouble("sum_discount") / group.getDouble("count_order");
+			group.put("avg_disc", average_discount);
+			
+			group.remove("sum_discount");
+		}
+		
+		
 //		BufferedWriter writer = null;
 //		try {
 //			writer = new BufferedWriter(new FileWriter(
 //					"./aggregationOutput.txt"));
-//			writer.write(out.toString());
+//			writer.write(result.toString());
 //		} catch (IOException e) {
 //			e.printStackTrace();
 //		}
-		
-		return cmdBody;
 	}
+	
+	private void query2(DB database) {
+		double result = getSubquery2(database, 1);
 		
+	}
+	
+	private double getSubquery2(DB database, int partKey) {
+		// Region
+		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("R_Name", "12345678901234567890123456789012"));
+
+		BasicDBObject fields = new BasicDBObject("R_Name", 1);
+		fields.put("_id", 1);
+		BasicDBObject project = new BasicDBObject("$project", fields );
+
+		DBCollection regionColl = database.getCollection("region");
+		AggregationOutput regionOut = regionColl.aggregate(match, project);
+		
+		// Nation
+		fields = new BasicDBObject("N_RegionKey", 1);
+		fields.put("_id", 1);
+		project = new BasicDBObject("$project", fields );
+
+		DBCollection nationColl = database.getCollection("nation");
+		AggregationOutput nationOut = nationColl.aggregate(project);
+
+		
+		// Supplier
+		fields = new BasicDBObject("S_NationKey", 1);
+		fields.put("_id", 1);
+		project = new BasicDBObject("$project", fields );
+
+		DBCollection supplierColl = database.getCollection("supplier");
+		AggregationOutput supplierOut = supplierColl.aggregate(project);
+		
+		
+		// PartSupp
+		match = new BasicDBObject("$match", new BasicDBObject("PS_PartKey", partKey));
+		
+		fields = new BasicDBObject("PS_SuppKey", 1);
+		fields.put("PS_SupplyCost", 1);
+		fields.put("_id", 0);
+		project = new BasicDBObject("$project", fields );
+
+		DBCollection partSuppColl = database.getCollection("partSupp");
+		AggregationOutput partSuppOut = partSuppColl.aggregate(match, project);
+		
+		Set<DBObject> nations = new HashSet<DBObject>();
+		for (DBObject region : regionOut.results()) {
+			for (DBObject nation : nationOut.results()) {
+				if (nation.get("N_RegionKey").equals(region.get("_id"))) {
+					nations.add(nation);
+				}
+			}
+		}
+		
+		Set<DBObject> suppliers = new HashSet<DBObject>();
+		for (DBObject nation : nations) {
+			for (DBObject supplier : supplierOut.results()) {
+				if (supplier.get("S_NationKey").equals(nation.get("_id"))) {
+					suppliers.add(supplier);
+				}
+			}
+		}
+		
+		double minimum = Double.MAX_VALUE;
+		for (DBObject supplier : suppliers) {
+			for (DBObject partSupp : partSuppOut.results()) {
+				if (partSupp.get("PS_SuppKey").equals(supplier.get("_id"))) {
+					minimum = Math.min(minimum, new Double(partSupp.get("PS_SupplyCost").toString()));
+				}
+			}
+		}
+		
+		return minimum;
+	}
+
 }
 

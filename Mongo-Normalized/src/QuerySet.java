@@ -14,7 +14,6 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 
@@ -248,23 +247,20 @@ public class QuerySet {
 		}
 		
 		// n_regionkey = r_regionkey
-		Set<DBObject> nations = new HashSet<DBObject>();
+		Map<String, DBObject> nations = new LinkedHashMap<String, DBObject>();
 		for ( DBObject region : regionOut.results() ) 
 			for ( DBObject nation : nationOut.results() ) 
 				if ( nation.get( "N_RegionKey" ).equals( region.get( "_id" ) ) ) 
-					nations.add( nation );
-
+					nations.put( nation.get( "_id" ).toString(), nation );
+		
 		// s_nationkey = n_nationkey 
 		Map<String, DBObject> suppliersWithNation = new LinkedHashMap<String, DBObject>();
-		for ( DBObject nation : nations ) 
-			for ( DBObject supplier : supplierOut.results() )
-				if ( supplier.get( "S_NationKey" ).equals( nation.get( "_id" ) ) )
-					suppliersWithNation.put( supplier.get( "_id" ).toString(), supplier ); 
+		for ( DBObject supplier : supplierOut.results() )
+			if (nations.containsKey( supplier.get( "S_NationKey" ).toString() ) )
+				suppliersWithNation.put( supplier.get( "_id" ).toString(), supplier );
 
 		//s_suppkey = ps_suppkey & p_partkey = ps_partkey 
-//		Set<DBObject> parts = new HashSet<DBObject>();
 		Map<String, DBObject> parts = new LinkedHashMap<String, DBObject>();
-//		Set<DBObject> suppliers = new HashSet<DBObject>();
 		Map<String, DBObject> suppliers = new LinkedHashMap<String, DBObject>();
 		Set<DBObject> partSuppsRelation = new HashSet<DBObject>();
 		for ( DBObject partSupp : partSupps ) {
@@ -279,8 +275,55 @@ public class QuerySet {
 			}
 		}
 		
-		// TODO Queda pendent fet l'agrupació final de cada fila de la select
-		// SELECT s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment 
+		DBCollection resultTable = database.getCollection( "resultQuery2" );
+		for (DBObject partSupp : partSuppsRelation) {
+			int suppKey, partKey, nationKey;
+			suppKey = new Integer ( partSupp.get( "PS_SuppKey" ).toString() );
+			partKey = new Integer ( partSupp.get( "PS_PartKey" ).toString() );
+			nationKey = new Integer ( suppliers.get( Integer.toString( suppKey ) ).get( "S_NationKey" ).toString() );
+			
+			BasicDBObject rowResult = new BasicDBObject();
+			
+			rowResult.put( "S_AcctBal", suppliers.get( Integer.toString( suppKey ) ).get( "S_AcctBal" ) );
+			rowResult.put( "S_Name", 	suppliers.get( Integer.toString( suppKey ) ).get( "S_Name" ) );
+			rowResult.put( "N_Name", 	nations.get( Integer.toString( nationKey ) ).get( "N_Name" ) );
+			rowResult.put( "P_PartKey", parts.get( Integer.toString( partKey ) ).get( "_id" ) );
+			rowResult.put( "P_Mfgr", 	parts.get( Integer.toString( partKey ) ).get( "P_Mfgr" ) );
+			rowResult.put( "S_Address", suppliers.get( Integer.toString( suppKey ) ).get( "S_Address" ) );
+			rowResult.put( "S_Phone", 	suppliers.get( Integer.toString( suppKey ) ).get( "S_Phone" ) );
+			rowResult.put( "S_Comment", suppliers.get( Integer.toString( suppKey ) ).get( "S_Comment" ) );
+			resultTable.insert(rowResult);
+		}
+		
+		// ORDER BY s_acctbal desc, n_name, s_name, p_partkey;
+		sortFields = new BasicDBObject( "S_AcctBal", -1 );
+		sortFields.put( "N_Name", 1 );
+		sortFields.put( "S_Name", 1 );
+		sortFields.put( "P_PartKey", 1 );
+
+		sort = new BasicDBObject( "$sort", sortFields );
+		
+		fields = new BasicDBObject( "_id", 0 );
+		fields.put( "S_AcctBal", 1 );
+		fields.put( "S_Name", 1 );
+		fields.put( "N_Name",  1 );
+		fields.put( "P_PartKey", 1 );
+		fields.put( "P_Mfgr", 1 );
+		fields.put( "S_Address", 1 );
+		fields.put( "S_Phone", 1 );
+		fields.put( "S_Comment", 1 );
+		
+		project = new BasicDBObject( "$project", fields );
+		
+		AggregationOutput resultOut = resultTable.aggregate( project, sort );		
+		
+		int i = 0;
+		BasicDBObject results = new BasicDBObject();
+		for ( DBObject result : resultOut.results() ) {
+			results.put( Integer.toString(i), result );
+			System.out.println( result );
+			++i;
+		}		
 	}
 	
 	private double getSubquery2(DB database, int partKey) {
@@ -354,5 +397,3 @@ public class QuerySet {
 	}
 
 }
-
-

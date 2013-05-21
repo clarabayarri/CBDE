@@ -1,3 +1,6 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -14,8 +17,6 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
-
-
 public class QuerySet {
 
 	public void executeQueries(DB database)  {
@@ -24,11 +25,7 @@ public class QuerySet {
 		Long average = (long) 0;
 		List<Long> timeDifferences = new ArrayList<Long>();
 		for (int j = 0; j < 5; ++j) {
-			Long start = System.nanoTime();
-			query1(database);
-			Long end = System.nanoTime();
-
-			timeDifferences.add(j, end-start);
+			timeDifferences.add(j, query1(database));
 		}
 
 		System.out.println("Query 1 took " + timeDifferences + 
@@ -37,11 +34,7 @@ public class QuerySet {
 		
 		timeDifferences = new ArrayList<Long>();
 		for (int j = 0; j < 5; ++j) {
-			Long start = System.nanoTime();
-			query2(database);
-			Long end = System.nanoTime();
-
-			timeDifferences.add(j, end-start);
+			timeDifferences.add(j, query2(database));
 		}
 
 		System.out.println("Query 2 took " + timeDifferences + 
@@ -53,11 +46,12 @@ public class QuerySet {
 
 	}
 
-	private void query1(DB database) {
+	private Long query1(DB database) {
+		Long start = System.nanoTime();
+		
 		//els mesos comencen en 0
 		Calendar calendar = new GregorianCalendar(2013,03,30);
 
-		// create our pipeline operations, first with the $match
 		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("L_ShipDate", new BasicDBObject("$lte", calendar.getTime())));
 
 		BasicDBObject fields = new BasicDBObject("L_ReturnFlag", 1);
@@ -81,7 +75,7 @@ public class QuerySet {
 		
 		Map<String, BasicDBObject> result = new LinkedHashMap<String, BasicDBObject>();
 		for (DBObject object : out.results()) {
-			String key = object.get("L_ReturnFlag").toString() + " - " + object.get("L_LineStatus");
+			String key = object.get("L_ReturnFlag") + " - " + object.get("L_LineStatus");
 			BasicDBObject group = result.get(key);
 			if (group == null) {
 				group = new BasicDBObject();
@@ -131,21 +125,28 @@ public class QuerySet {
 			
 			group.remove("sum_discount");
 		}
+		Long end = System.nanoTime();
 		
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(
+					"./query1Output.txt"));
+			writer.write(out.toString());
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
-//		BufferedWriter writer = null;
-//		try {
-//			writer = new BufferedWriter(new FileWriter(
-//					"./aggregationOutput.txt"));
-//			writer.write(result.toString());
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
+		return end-start;
 	}
 	
-	private void query2(DB database) {
+	private Long query2(DB database) {
+		Long start = System.nanoTime();
+		
 		double result = getSubquery2(database, 1);
 		
+		Long end = System.nanoTime();
+		return end-start;
 	}
 	
 	private double getSubquery2(DB database, int partKey) {

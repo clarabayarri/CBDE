@@ -34,6 +34,7 @@ public class DataInserter {
 	private Map<Integer, List<BasicDBObject>> partSupps = new HashMap<Integer, List<BasicDBObject>>();
 	private List<BasicDBObject> customers = new ArrayList<BasicDBObject>();
 	private List<BasicDBObject> orders = new ArrayList<BasicDBObject>();
+	private List<BasicDBObject> lineitems = new ArrayList<BasicDBObject>();
 	
 	public void initialInsert(DB database) {
 		System.out.println("-------- Initial insertion ------");
@@ -51,6 +52,7 @@ public class DataInserter {
 		inserts.put(database.getCollection("region"), regions);
 		inserts.put(database.getCollection("part"), parts);
 		inserts.put(database.getCollection("customer"), customers);
+		inserts.put(database.getCollection("lineitem"), lineitems);
 		
 		Date startDate = new Date();
 		for (DBCollection collection : inserts.keySet()) {
@@ -79,6 +81,7 @@ public class DataInserter {
 		inserts.put(database.getCollection("region"), regions);
 		inserts.put(database.getCollection("part"), parts);
 		inserts.put(database.getCollection("customer"), customers);
+		inserts.put(database.getCollection("lineitem"), lineitems);
 		
 		Date startDate = new Date();
 		for (DBCollection collection : inserts.keySet()) {
@@ -335,6 +338,9 @@ public class DataInserter {
 	
 	@SuppressWarnings("unchecked")
 	private void getLineitemObjects() {
+		// We only use these objects to insert, so no need to keep the old ones.
+		lineitems.clear();
+		
 		// L_OrderKey, L_PartKey, L_SuppKey, L_LineNumber, L_Quantity, L_ExtendedPrice, L_Discount,
 		// L_Tax, L_ReturnFlag, L_LineStatus, L_ShipDate, L_CommitDate, L_ReceiptDate, L_ShipInstruct, L_ShipMode, L_Comment, skip
 		
@@ -380,6 +386,7 @@ public class DataInserter {
 				document.put("L_Comment", getRandomString(64));
 			
 			document.put("skip", getRandomString(64));
+			lineitems.add(document);
 		}
 	}
 }

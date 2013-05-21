@@ -28,11 +28,11 @@ public class MongoTuned {
 		
 		dataInserter.initialInsert(database);
 		
-		//querySet.executeQueries(database);
+		querySet.executeQueries(database);
 		
 		dataInserter.secondInsert(database);
 		
-		//querySet.executeQueries(database);
+		querySet.executeQueries(database);
 		
 	}
 	

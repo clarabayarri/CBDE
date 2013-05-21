@@ -1,6 +1,3 @@
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -89,9 +86,11 @@ public class QuerySet {
 				group.put("count_order", 0);
 				group.put("sum_discount", 0);
 			}
-			int discount = new Integer(object.get("L_Quantity").toString());
-			int sumQuantity = group.getInt("sum_qty") + discount;
+			int quantity = new Integer(object.get("L_Quantity").toString());
+			int sumQuantity = group.getInt("sum_qty") + quantity;
 			group.put("sum_qty", sumQuantity);
+			
+			double discount = new Double(object.get("L_Discount").toString());
 
 			double extendedPrice = new Double(object.get("L_ExtendedPrice").toString());
 			double sumExtended = group.getDouble("sum_base_price") + extendedPrice;
@@ -107,7 +106,7 @@ public class QuerySet {
 			int num_elements = group.getInt("count_order") + 1;
 			group.put("count_order", num_elements);
 
-			int sum_discount = group.getInt("sum_discount") + discount;
+			double sum_discount = group.getDouble("sum_discount") + discount;
 			group.put("sum_discount", sum_discount);
 
 			result.put(key, group);
@@ -128,15 +127,19 @@ public class QuerySet {
 		}
 		Long end = System.nanoTime();
 
-		BufferedWriter writer = null;
-		try {
-			writer = new BufferedWriter(new FileWriter(
-					"./query1Output.txt"));
-			writer.write(result.toString());
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		
+		DBCollection resultTable = database.getCollection( "resultQuery1" );
+		BasicDBObject resultObject = new BasicDBObject();
+		resultObject.put("numResults", result.size());
+		List<BasicDBObject> firstResults = new ArrayList<BasicDBObject>();
+		int count = 0;
+		for (String key : result.keySet()) {
+			firstResults.add(result.get(key));
+			++ count;
+			if (count == 20) break;
 		}
+		resultObject.put("result", firstResults);
+		resultTable.insert(resultObject);
 
 		return end-start;
 	}
@@ -234,16 +237,12 @@ public class QuerySet {
 		});
 
 		Long end = System.nanoTime();
-
-		BufferedWriter writer = null;
-		try {
-			writer = new BufferedWriter(new FileWriter(
-					"./query2Output.txt"));
-			writer.write(result.toString());
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		
+		DBCollection resultTable = database.getCollection( "resultQuery2" );
+		BasicDBObject resultObject = new BasicDBObject();
+		resultObject.put("numResults", result.size());
+		resultObject.put("result", result);
+		resultTable.insert(resultObject);
 
 		return end-start;
 	}

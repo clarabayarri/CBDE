@@ -83,41 +83,43 @@ public class QuerySet {
 		
 		Map<String, BasicDBObject> result = new LinkedHashMap<String, BasicDBObject>();
 		for (DBObject object : out.results()) {
-			String key = object.get( "L_ReturnFlag" ).toString() + " - " + object.get( "L_LineStatus" );
+			String key = object.get("L_ReturnFlag") + " - " + object.get("L_LineStatus");
 			BasicDBObject group = result.get(key);
 			if (group == null) {
 				group = new BasicDBObject();
-				group.put( "L_ReturnFlag", object.get("L_ReturnFlag") );
-				group.put( "L_LineStatus", object.get("L_LineStatus") );
-				group.put( "sum_qty", 0 );
-				group.put( "sum_base_price", 0 );
-				group.put( "sum_disc_price", 0 );
-				group.put( "sum_charge", 0 );
-				group.put( "count_order", 0 );
-				group.put( "sum_discount", 0 );
+				group.put("L_ReturnFlag", object.get("L_ReturnFlag"));
+				group.put("L_LineStatus", object.get("L_LineStatus"));
+				group.put("sum_qty", 0);
+				group.put("sum_base_price", 0);
+				group.put("sum_disc_price", 0);
+				group.put("sum_charge", 0);
+				group.put("count_order", 0);
+				group.put("sum_discount", 0);
 			}
-			int discount = new Integer(object.get( "L_Quantity" ).toString());
-			int sumQuantity = group.getInt( "sum_qty" ) + discount;
-			group.put( "sum_qty", sumQuantity );
+			int quantity = new Integer(object.get("L_Quantity").toString());
+			int sumQuantity = group.getInt("sum_qty") + quantity;
+			group.put("sum_qty", sumQuantity);
 			
-			double extendedPrice = new Double(object.get( "L_ExtendedPrice" ).toString());
-			double sumExtended = group.getDouble( "sum_base_price" ) + extendedPrice;
-			group.put( "sum_base_price", sumExtended );
-			
-			double sum_disc_price = group.getDouble( "sum_disc_price" ) + ( extendedPrice * ( 1 - discount ) );
-			group.put( "sum_disc_price", sum_disc_price );
-			
-			double tax = new Double( object.get( "L_Tax" ).toString() );
-			double sum_charge = group.getDouble( "sum_charge" ) + ( extendedPrice * ( 1 - discount ) * ( 1 + tax ) );
-			group.put( "sum_charge", sum_charge );
-			
-			int num_elements = group.getInt( "count_order" ) + 1;
-			group.put( "count_order", num_elements );
-			
-			int sum_discount = group.getInt( "sum_discount" ) + discount;
-			group.put( "sum_discount", sum_discount );
-			
-			result.put( key, group );
+			double discount = new Double(object.get("L_Discount").toString());
+
+			double extendedPrice = new Double(object.get("L_ExtendedPrice").toString());
+			double sumExtended = group.getDouble("sum_base_price") + extendedPrice;
+			group.put("sum_base_price", sumExtended);
+
+			double sum_disc_price = group.getDouble("sum_disc_price") + (extendedPrice * (1-discount));
+			group.put("sum_disc_price", sum_disc_price);
+
+			double tax = new Double(object.get("L_Tax").toString());
+			double sum_charge = group.getDouble("sum_charge") + (extendedPrice * (1-discount) * (1 + tax));
+			group.put("sum_charge", sum_charge);
+
+			int num_elements = group.getInt("count_order") + 1;
+			group.put("count_order", num_elements);
+
+			double sum_discount = group.getDouble("sum_discount") + discount;
+			group.put("sum_discount", sum_discount);
+
+			result.put(key, group);
 		}
 		
 		for (String key : result.keySet()) {
@@ -147,7 +149,7 @@ public class QuerySet {
 	
 	private void query2( DB database ) {
 		// Part
-		Pattern regex = Pattern.compile( "12345678901234567890123456789012" );
+		Pattern regex = Pattern.compile( "*12345678901234567890123456789012" );
 		BasicDBObject clause1 = new BasicDBObject( "P_Type", regex );   
 		BasicDBObject clause2 = new BasicDBObject( "P_Size", 1000 );
 		BasicDBList and = new BasicDBList();
@@ -317,13 +319,19 @@ public class QuerySet {
 		
 		AggregationOutput resultOut = resultTable.aggregate( project, sort );		
 		
-		int i = 0;
-		BasicDBObject results = new BasicDBObject();
-		for ( DBObject result : resultOut.results() ) {
-			results.put( Integer.toString(i), result );
-			System.out.println( result );
-			++i;
-		}		
+		resultTable = database.getCollection( "resultQuery2Sorted" );
+		BasicDBObject resultObject = new BasicDBObject();
+		resultObject.put("numResults", partSuppsRelation.size());
+		resultObject.put("result", resultOut);
+		resultTable.insert(resultObject);
+		
+//		int i = 0;
+//		BasicDBObject results = new BasicDBObject();
+//		for ( DBObject result : resultOut.results() ) {
+//			results.put( Integer.toString(i), result );
+//			System.out.println( result );
+//			++i;
+//		}		
 	}
 	
 	private double getSubquery2(DB database, int partKey) {

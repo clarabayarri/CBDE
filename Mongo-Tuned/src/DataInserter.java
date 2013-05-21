@@ -200,7 +200,6 @@ public class DataInserter {
 			document.put("P_RetailPrice", getRandomDouble(13));
 			document.put("P_Comment", getRandomString(64));
 			document.put("skip", getRandomString(64));
-			document.put("partsupps", new ArrayList<BasicDBObject>());
 			parts.add(document);
 		}
 	}
@@ -230,6 +229,7 @@ public class DataInserter {
 			document.put("S_AcctBal", getRandomDouble(13));
 			document.put("S_Comment", getRandomString(105));
 			document.put("skip", getRandomString(64));
+			document.put("partsupps", new ArrayList<BasicDBObject>());
 			suppliers.add(document);
 		}
 	}
@@ -242,7 +242,8 @@ public class DataInserter {
 		for (int i = 1; i <= maxValues; ++i) {
 			BasicDBObject document = new BasicDBObject();
 			
-			Integer suppid = supplierIds.get(random.nextInt(supplierIds.size()));
+			int suppIndex = random.nextInt(supplierIds.size());
+			Integer suppid = supplierIds.get(suppIndex);
 			int partIndex = random.nextInt(partIds.size());
 			Integer partid = partIds.get(partIndex);
 			while(partSuppIds.get(suppid) != null && partSuppIds.get(suppid).contains(partid)) {
@@ -254,11 +255,11 @@ public class DataInserter {
 			//document.put("PS_PartKey", partid);
 			
 			// PS_PartKey
-			List<BasicDBObject> partSuppliers = (List<BasicDBObject>) parts.get(partIndex).get("partsupps");
+			List<BasicDBObject> partSuppliers = (List<BasicDBObject>) suppliers.get(suppIndex).get("partsupps");
 			partSuppliers.add(document);
-			parts.get(partIndex).put("partsupps", partSuppliers);
+			suppliers.get(suppIndex).put("partsupps", partSuppliers);
 			
-			document.put("PS_SuppKey", suppid);
+			document.put("PS_PartKey", partid);
 			document.put("PS_AvailQty", getRandomInteger());
 			document.put("PS_SupplyCost", getRandomDouble(13));
 			document.put("PS_Comment", getRandomString(200));

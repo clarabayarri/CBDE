@@ -5,11 +5,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
@@ -143,7 +141,7 @@ public class QuerySet {
 	private Long query2(DB database) {
 		Long start = System.nanoTime();
 		
-		Double result = getSubquery2(database, 1);
+		Double result = getSubquery2(database, 35131);
 		
 		Long end = System.nanoTime();
 		
@@ -160,69 +158,31 @@ public class QuerySet {
 		return end-start;
 	}
 	
+	@SuppressWarnings("unchecked")
 	private double getSubquery2(DB database, int partKey) {
 		// Region
 		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("R_Name", "12345678901234567890123456789012"));
 
 		BasicDBObject fields = new BasicDBObject("R_Name", 1);
+		fields.put("nations", 1);
 		fields.put("_id", 1);
 		BasicDBObject project = new BasicDBObject("$project", fields );
 
 		DBCollection regionColl = database.getCollection("region");
 		AggregationOutput regionOut = regionColl.aggregate(match, project);
 		
-		// Nation
-		fields = new BasicDBObject("N_RegionKey", 1);
-		fields.put("_id", 1);
-		project = new BasicDBObject("$project", fields );
-
-		DBCollection nationColl = database.getCollection("nation");
-		AggregationOutput nationOut = nationColl.aggregate(project);
-
-		
-		// Supplier
-		fields = new BasicDBObject("S_NationKey", 1);
-		fields.put("_id", 1);
-		project = new BasicDBObject("$project", fields );
-
-		DBCollection supplierColl = database.getCollection("supplier");
-		AggregationOutput supplierOut = supplierColl.aggregate(project);
-		
-		
-		// PartSupp
-		match = new BasicDBObject("$match", new BasicDBObject("PS_PartKey", partKey));
-		
-		fields = new BasicDBObject("PS_SuppKey", 1);
-		fields.put("PS_SupplyCost", 1);
-		fields.put("_id", 0);
-		project = new BasicDBObject("$project", fields );
-
-		DBCollection partSuppColl = database.getCollection("partSupp");
-		AggregationOutput partSuppOut = partSuppColl.aggregate(match, project);
-		
-		Set<DBObject> nations = new HashSet<DBObject>();
-		for (DBObject region : regionOut.results()) {
-			for (DBObject nation : nationOut.results()) {
-				if (nation.get("N_RegionKey").equals(region.get("_id"))) {
-					nations.add(nation);
-				}
-			}
-		}
-		
-		Set<DBObject> suppliers = new HashSet<DBObject>();
-		for (DBObject nation : nations) {
-			for (DBObject supplier : supplierOut.results()) {
-				if (supplier.get("S_NationKey").equals(nation.get("_id"))) {
-					suppliers.add(supplier);
-				}
-			}
-		}
-		
 		double minimum = Double.MAX_VALUE;
-		for (DBObject supplier : suppliers) {
-			for (DBObject partSupp : partSuppOut.results()) {
-				if (partSupp.get("PS_SuppKey").equals(supplier.get("_id"))) {
-					minimum = Math.min(minimum, new Double(partSupp.get("PS_SupplyCost").toString()));
+		for (DBObject region : regionOut.results()) {
+			List<BasicDBObject> nations = (List<BasicDBObject>) region.get("nations");
+			for (DBObject nation : nations) {
+				List<BasicDBObject> suppliers = (List<BasicDBObject>) nation.get("suppliers");
+				for (DBObject supplier : suppliers) {
+					List<BasicDBObject> partsupps = (List<BasicDBObject>) supplier.get("partsupps");
+					for (DBObject partsupp : partsupps) {
+						if (partsupp.get("PS_PartKey").equals(partKey)) {
+							minimum = Math.min(minimum, new Double(partsupp.get("PS_SupplyCost").toString()));
+						}
+					}
 				}
 			}
 		}

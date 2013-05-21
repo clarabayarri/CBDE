@@ -131,7 +131,7 @@ public class QuerySet {
 		try {
 			writer = new BufferedWriter(new FileWriter(
 					"./query1Output.txt"));
-			writer.write(out.toString());
+			writer.write(result.toString());
 			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -143,9 +143,20 @@ public class QuerySet {
 	private Long query2(DB database) {
 		Long start = System.nanoTime();
 		
-		double result = getSubquery2(database, 1);
+		Double result = getSubquery2(database, 1);
 		
 		Long end = System.nanoTime();
+		
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(
+					"./query2Output.txt"));
+			writer.write(result.toString());
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		return end-start;
 	}
 	

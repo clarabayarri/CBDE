@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -319,7 +320,7 @@ public class QuerySet {
 						Date l_shipDate = (Date) lineitem.get("L_ShipDate");
 						if (l_shipDate.after(l_refDate)) {
 							BasicDBObject object = new BasicDBObject();
-							object.put("l_orderkey", lineitem.get("L_OrderKey"));
+							object.put("l_orderkey", order.get("O_OrderKey"));
 							double extendedPrice = (Double) lineitem.get("L_ExtendedPrice");
 							double discount = (Double) lineitem.get("L_Discount");
 							double revenue = extendedPrice * (1 - discount);
@@ -333,19 +334,45 @@ public class QuerySet {
 			}
 		}
 		
-		DBCollection tempTable = database.getCollection("tempResultQuery3");
-		tempTable.insert(result);
+		Map<String, List<DBObject>> groups = new HashMap<String, List<DBObject>>();
+		for (DBObject object : result) {
+			String key = object.get("l_orderkey").toString() + "-" + object.get("o_orderdate").toString() + "-" + object.get("o_shippriority").toString();
+			List<DBObject> list = groups.get(key);
+			if (list == null) {
+				list = new ArrayList<DBObject>();
+				groups.put(key, list);
+			}
+			list.add(object);
+		}
 		
-		BasicDBObject groupFields = new BasicDBObject("l_orderkey", "$l_orderkey");
-		groupFields.put("o_orderdate", "$o_orderdate");
-		groupFields.put("o_shippriority", "$o_shippriority");
-		BasicDBObject group = new BasicDBObject("_id", groupFields);
-		group.put("revenue", new BasicDBObject("$sum", "$revenue"));
+		List<DBObject> finalResult = new ArrayList<DBObject>();
+		for (String key : groups.keySet()) {
+			BasicDBObject row = new BasicDBObject();
+			double total = 0;
+			for (DBObject obj : groups.get(key)) total += (Double) obj.get("revenue");
+			row.put("revenue", total);
+			DBObject first = groups.get(key).get(0);
+			row.put("l_orderkey", first.get("l_orderkey"));
+			row.put("o_orderdate", first.get("o_orderdate"));
+			row.put("o_shippriority", first.get("o_shippriority"));
+			finalResult.add(row);
+		}
 		
-		BasicDBObject sortFields = new BasicDBObject( "revenue", -1 );
-		sortFields.put("o_orderdate", 1 );
-		
-		AggregationOutput finalout = tempTable.aggregate(new BasicDBObject("$group", group), new BasicDBObject( "$sort", sortFields));
+		Collections.sort(finalResult, new Comparator<DBObject>() {
+
+			@Override
+			public int compare(DBObject o1, DBObject o2) {
+				Double revenue1 = (Double) o1.get("revenue");
+				Double revenue2 = (Double) o2.get("revenue");
+				if (!revenue1.equals(revenue2)) {
+					return revenue2.compareTo(revenue1);
+				}
+				Date orderDate1 = (Date) o1.get("o_orderdate");
+				Date orderDate2 = (Date) o2.get("o_orderdate");
+				return orderDate1.compareTo(orderDate2);
+			}
+			
+		});
 		
 		Long end = System.nanoTime();
 		
@@ -353,7 +380,7 @@ public class QuerySet {
 		BasicDBObject resultObject = new BasicDBObject();
 		int count = 0;
 		List<DBObject> firstresults = new ArrayList<DBObject>();
-		for (DBObject obj : finalout.results()) {
+		for (DBObject obj : finalResult) {
 			++ count;
 			if (count <= 20) firstresults.add(obj);
 		}

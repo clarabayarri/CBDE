@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +37,15 @@ public class QuerySet {
 		}
 
 		System.out.println("Query 2 took " + timeDifferences + 
+				" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
+		average += Collections.min(timeDifferences);
+		
+		timeDifferences = new ArrayList<Long>();
+		for (int j = 0; j < 5; ++j) {
+			timeDifferences.add(j, query3(database));
+		}
+
+		System.out.println("Query 3 took " + timeDifferences + 
 				" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
 		average += Collections.min(timeDifferences);
 
@@ -277,6 +287,82 @@ public class QuerySet {
 		}
 
 		return minimum;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private Long query3(DB database) {
+		Long start = System.nanoTime();
+
+		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("C_MktSegment", "12345678901234567890123456789012"));
+
+		BasicDBObject fields = new BasicDBObject("orders", 1);
+		fields.put("_id", 0);
+		BasicDBObject project = new BasicDBObject("$project", fields );
+		
+		// Customer
+		DBCollection myColl = database.getCollection("customer");
+		AggregationOutput out = myColl.aggregate(match, project);
+		
+		Calendar calendar = new GregorianCalendar(2013,4,29);
+		Date o_refDate = calendar.getTime();
+		Calendar calendar2 = new GregorianCalendar(2013,4,30);
+		Date l_refDate = calendar2.getTime();
+		
+		List<DBObject> result = new ArrayList<DBObject>();
+		for (DBObject customer : out.results()) {
+			List<DBObject> orders = (List<DBObject>) customer.get("orders");
+			for (DBObject order : orders) {
+				Date o_orderDate = (Date) order.get("O_OrderDate");
+				if (o_orderDate.before(o_refDate)) {
+					List<DBObject> lineitems = (List<DBObject>) order.get("lineitems");
+					for (DBObject lineitem : lineitems) {
+						Date l_shipDate = (Date) lineitem.get("L_ShipDate");
+						if (l_shipDate.after(l_refDate)) {
+							BasicDBObject object = new BasicDBObject();
+							object.put("l_orderkey", lineitem.get("L_OrderKey"));
+							double extendedPrice = (Double) lineitem.get("L_ExtendedPrice");
+							double discount = (Double) lineitem.get("L_Discount");
+							double revenue = extendedPrice * (1 - discount);
+							object.put("revenue", revenue);
+							object.put("o_orderdate", o_orderDate);
+							object.put("o_shippriority", order.get("O_ShipPriority"));
+							result.add(object);
+						}
+					}
+				}
+			}
+		}
+		
+		DBCollection tempTable = database.getCollection("tempResultQuery3");
+		tempTable.insert(result);
+		
+		BasicDBObject groupFields = new BasicDBObject("l_orderkey", "$l_orderkey");
+		groupFields.put("o_orderdate", "$o_orderdate");
+		groupFields.put("o_shippriority", "$o_shippriority");
+		BasicDBObject group = new BasicDBObject("_id", groupFields);
+		group.put("revenue", new BasicDBObject("$sum", "$revenue"));
+		
+		BasicDBObject sortFields = new BasicDBObject( "revenue", -1 );
+		sortFields.put("o_orderdate", 1 );
+		
+		AggregationOutput finalout = tempTable.aggregate(new BasicDBObject("$group", group), new BasicDBObject( "$sort", sortFields));
+		
+		Long end = System.nanoTime();
+		
+		DBCollection resultTable = database.getCollection( "resultQuery3" );
+		BasicDBObject resultObject = new BasicDBObject();
+		int count = 0;
+		List<DBObject> firstresults = new ArrayList<DBObject>();
+		for (DBObject obj : finalout.results()) {
+			++ count;
+			if (count <= 20) firstresults.add(obj);
+		}
+		resultObject.put("numResults", count);
+		
+		resultObject.put("result", firstresults);
+		resultTable.insert(resultObject);
+
+		return end-start;
 	}
 
 }

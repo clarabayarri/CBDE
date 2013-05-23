@@ -40,13 +40,22 @@ public class QuerySet {
 		System.out.println("Query 2 took " + timeDifferences + 
 				" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
 		average += Collections.min(timeDifferences);
-		
+
 		timeDifferences = new ArrayList<Long>();
 		for (int j = 0; j < 5; ++j) {
 			timeDifferences.add(j, query3(database));
 		}
 
 		System.out.println("Query 3 took " + timeDifferences + 
+				" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
+		average += Collections.min(timeDifferences);
+
+		timeDifferences = new ArrayList<Long>();
+		for (int j = 0; j < 5; ++j) {
+			timeDifferences.add(j, query4(database));
+		}
+
+		System.out.println("Query 4 took " + timeDifferences + 
 				" in nanoseconds --- with minimum " + Collections.min(timeDifferences));
 		average += Collections.min(timeDifferences);
 
@@ -100,7 +109,7 @@ public class QuerySet {
 			int quantity = new Integer(object.get("L_Quantity").toString());
 			int sumQuantity = group.getInt("sum_qty") + quantity;
 			group.put("sum_qty", sumQuantity);
-			
+
 			double discount = new Double(object.get("L_Discount").toString());
 
 			double extendedPrice = new Double(object.get("L_ExtendedPrice").toString());
@@ -138,7 +147,7 @@ public class QuerySet {
 		}
 		Long end = System.nanoTime();
 
-		
+
 		DBCollection resultTable = database.getCollection( "resultQuery1" );
 		BasicDBObject resultObject = new BasicDBObject();
 		resultObject.put("numResults", result.size());
@@ -190,7 +199,7 @@ public class QuerySet {
 
 		DBCollection regionColl = database.getCollection( "region" );
 		AggregationOutput regionOut = regionColl.aggregate( match, project );
-		
+
 		List<BasicDBObject> result = new ArrayList<BasicDBObject>();
 		for (DBObject region : regionOut.results()) {
 			List<BasicDBObject> nations = (List<BasicDBObject>) region.get("nations");
@@ -203,7 +212,7 @@ public class QuerySet {
 							Integer partKey = (Integer) part.get("_id");
 							if (partsupp.get("PS_PartKey").equals(partKey) && partsupp.get("PS_SupplyCost").equals(getSubquery2(database, partKey))) {
 								BasicDBObject rowResult = new BasicDBObject();
-								
+
 								rowResult.put( "S_AcctBal", supplier.get( "S_AcctBal" ) );
 								rowResult.put( "S_Name", 	supplier.get( "S_Name" ) );
 								rowResult.put( "N_Name", 	nation.get( "N_Name" ) );
@@ -212,7 +221,7 @@ public class QuerySet {
 								rowResult.put( "S_Address", supplier.get( "S_Address" ) );
 								rowResult.put( "S_Phone", 	supplier.get( "S_Phone" ) );
 								rowResult.put( "S_Comment", supplier.get( "S_Comment" ) );
-								
+
 								result.add(rowResult);
 							}
 						}
@@ -220,7 +229,7 @@ public class QuerySet {
 				}
 			}
 		}
-		
+
 		Collections.sort(result, new Comparator<BasicDBObject>() {
 
 			@Override
@@ -244,11 +253,11 @@ public class QuerySet {
 				String partkey2 = arg1.getString("P_PartKey");
 				return partkey1.compareTo(partkey2);
 			}
-			
+
 		});
 
 		Long end = System.nanoTime();
-		
+
 		DBCollection resultTable = database.getCollection( "resultQuery2" );
 		BasicDBObject resultObject = new BasicDBObject();
 		resultObject.put("numResults", result.size());
@@ -289,7 +298,7 @@ public class QuerySet {
 
 		return minimum;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private Long query3(DB database) {
 		Long start = System.nanoTime();
@@ -299,16 +308,16 @@ public class QuerySet {
 		BasicDBObject fields = new BasicDBObject("orders", 1);
 		fields.put("_id", 0);
 		BasicDBObject project = new BasicDBObject("$project", fields );
-		
+
 		// Customer
 		DBCollection myColl = database.getCollection("customer");
 		AggregationOutput out = myColl.aggregate(match, project);
-		
-		Calendar calendar = new GregorianCalendar(2013,4,29);
+
+		Calendar calendar = new GregorianCalendar(2013,3,29);
 		Date o_refDate = calendar.getTime();
-		Calendar calendar2 = new GregorianCalendar(2013,4,30);
+		Calendar calendar2 = new GregorianCalendar(2013,3,30);
 		Date l_refDate = calendar2.getTime();
-		
+
 		List<DBObject> result = new ArrayList<DBObject>();
 		for (DBObject customer : out.results()) {
 			List<DBObject> orders = (List<DBObject>) customer.get("orders");
@@ -333,7 +342,7 @@ public class QuerySet {
 				}
 			}
 		}
-		
+
 		Map<String, List<DBObject>> groups = new HashMap<String, List<DBObject>>();
 		for (DBObject object : result) {
 			String key = object.get("l_orderkey").toString() + "-" + object.get("o_orderdate").toString() + "-" + object.get("o_shippriority").toString();
@@ -344,7 +353,7 @@ public class QuerySet {
 			}
 			list.add(object);
 		}
-		
+
 		List<DBObject> finalResult = new ArrayList<DBObject>();
 		for (String key : groups.keySet()) {
 			BasicDBObject row = new BasicDBObject();
@@ -357,7 +366,7 @@ public class QuerySet {
 			row.put("o_shippriority", first.get("o_shippriority"));
 			finalResult.add(row);
 		}
-		
+
 		Collections.sort(finalResult, new Comparator<DBObject>() {
 
 			@Override
@@ -371,11 +380,11 @@ public class QuerySet {
 				Date orderDate2 = (Date) o2.get("o_orderdate");
 				return orderDate1.compareTo(orderDate2);
 			}
-			
+
 		});
-		
+
 		Long end = System.nanoTime();
-		
+
 		DBCollection resultTable = database.getCollection( "resultQuery3" );
 		BasicDBObject resultObject = new BasicDBObject();
 		int count = 0;
@@ -385,8 +394,120 @@ public class QuerySet {
 			if (count <= 20) firstresults.add(obj);
 		}
 		resultObject.put("numResults", count);
-		
+
 		resultObject.put("result", firstresults);
+		resultTable.insert(resultObject);
+
+		return end-start;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Long query4(DB database) {
+		Long start = System.nanoTime();
+
+
+		// Customer + Orders + Lineitem
+		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("C_MktSegment", "12345678901234567890123456789012"));
+
+		BasicDBObject fields = new BasicDBObject("orders", 1);
+		fields.put("_id", 0);
+		fields.put("C_NationKey", 1);
+		BasicDBObject project = new BasicDBObject("$project", fields );
+
+		DBCollection customerColl = database.getCollection("customer");
+		AggregationOutput customerOut = customerColl.aggregate(match, project);
+
+		// Region + Nation + Supplier
+		// Region
+		match = new BasicDBObject( "$match", new BasicDBObject( "R_Name", "12345678901234567890123456789012" ) );
+
+		fields = new BasicDBObject("nations", 1);
+		fields.put( "_id", 1 );
+		project = new BasicDBObject( "$project", fields );
+		
+		DBCollection regionColl = database.getCollection("region");
+		AggregationOutput regionOut = regionColl.aggregate(match, project);
+		
+		List<BasicDBObject> suppliernations = new ArrayList<BasicDBObject>();
+		for (DBObject region : regionOut.results()) {
+			List<DBObject> nations = (List<DBObject>) region.get("nations");
+			for (DBObject nation : nations) {
+				List<DBObject> suppliers = (List<DBObject>) nation.get("suppliers");
+				for (DBObject supplier : suppliers) {
+					BasicDBObject row = new BasicDBObject("S_NationKey", nation.get("N_NationKey"));
+					row.put("S_SuppKey", supplier.get("S_SuppKey"));
+					row.put("N_Name", nation.get("N_Name"));
+					suppliernations.add(row);
+				}
+			}
+		}
+		
+		Calendar calendar = new GregorianCalendar(2013,3,29);
+		Date refDate1 = calendar.getTime();
+		Calendar calendar2 = new GregorianCalendar(2014,3,30);
+		Date refDate2 = calendar2.getTime();
+		
+		Map<String, Double> groups = new HashMap<String, Double>();
+		for (DBObject customer : customerOut.results()) {
+			List<DBObject> suppliers = new ArrayList<DBObject>();
+			for (DBObject supp : suppliernations) {
+				if (supp.get("S_NationKey").equals(customer.get("C_NationKey"))) {
+					suppliers.add(supp);
+				}
+			}
+			if (!suppliers.isEmpty()) {
+				List<DBObject> orders = (List<DBObject>) customer.get("orders");
+				for (DBObject order : orders) {
+					Date o_orderdate = (Date) order.get("O_OrderDate");
+					if (o_orderdate.before(refDate2) && o_orderdate.after(refDate1)) {
+						List<DBObject> lineitems = (List<DBObject>) order.get("lineitems");
+						for (DBObject lineitem : lineitems) {
+							for (DBObject supplier : suppliers) {
+								if (supplier.get("S_SuppKey").equals(lineitem.get("L_SuppKey"))) {
+									String key = supplier.get("N_Name").toString();
+									
+									Double extendedPrice = (Double) lineitem.get("L_ExtendedPrice");
+									Double discount = (Double) lineitem.get("L_Discount");
+									Double revenue = extendedPrice * (1-discount);
+									
+									Double groupRevenue = groups.get(key);
+									if (groupRevenue == null) {
+										groupRevenue = new Double(0);
+									}
+									groupRevenue += revenue;
+									groups.put(key, groupRevenue);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		List<DBObject> result = new ArrayList<DBObject>();
+		for (String key : groups.keySet()) {
+			BasicDBObject row = new BasicDBObject("n_name", key);
+			row.put("revenue", groups.get(key));
+			result.add(row);
+		}
+		
+		Collections.sort(result, new Comparator<DBObject>() {
+
+			@Override
+			public int compare(DBObject arg0, DBObject arg1) {
+				Double revenue1 = (Double) arg0.get("revenue");
+				Double revenue2 = (Double) arg1.get("revenue");
+				return revenue2.compareTo(revenue1);
+			}
+			
+		});
+		
+		Long end = System.nanoTime();
+		
+		DBCollection resultTable = database.getCollection( "resultQuery4" );
+		BasicDBObject resultObject = new BasicDBObject();
+		resultObject.put("numResults", result.size());
+		resultObject.put("result", result);
 		resultTable.insert(resultObject);
 
 		return end-start;

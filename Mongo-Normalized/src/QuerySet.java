@@ -1,3 +1,6 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -50,6 +53,18 @@ public class QuerySet {
 				" in nanoseconds --- with minimum " + Collections.min(timeDifferences) );
 		average += Collections.min( timeDifferences );
 		
+		timeDifferences = new ArrayList<Long>();
+		for ( int j = 0; j < 5; ++j ) {
+			Long start = System.nanoTime();
+			query3( database );
+			Long end = System.nanoTime();
+
+			timeDifferences.add( j, end-start );
+		}
+
+		System.out.println( "Query 3 took " + timeDifferences + 
+				" in nanoseconds --- with minimum " + Collections.min(timeDifferences) );
+		average += Collections.min( timeDifferences );
 		
 		System.out.println( "\nAverage query time " + average/4 + " in nanoseconds\n" );
 
@@ -79,47 +94,47 @@ public class QuerySet {
 		BasicDBObject sort = new BasicDBObject( "$sort", sortFields );
 
 		DBCollection myColl = database.getCollection( "lineitem" );
-		AggregationOutput out = myColl.aggregate(match, project, sort);
+		AggregationOutput out = myColl.aggregate( match, project, sort );
 		
 		Map<String, BasicDBObject> result = new LinkedHashMap<String, BasicDBObject>();
 		for (DBObject object : out.results()) {
-			String key = object.get("L_ReturnFlag") + " - " + object.get("L_LineStatus");
+			String key = object.get( "L_ReturnFlag" ) + " - " + object.get( "L_LineStatus" );
 			BasicDBObject group = result.get(key);
 			if (group == null) {
 				group = new BasicDBObject();
-				group.put("L_ReturnFlag", object.get("L_ReturnFlag"));
-				group.put("L_LineStatus", object.get("L_LineStatus"));
-				group.put("sum_qty", 0);
-				group.put("sum_base_price", 0);
-				group.put("sum_disc_price", 0);
-				group.put("sum_charge", 0);
-				group.put("count_order", 0);
-				group.put("sum_discount", 0);
+				group.put( "L_ReturnFlag", object.get( "L_ReturnFlag" ) );
+				group.put( "L_LineStatus", object.get( "L_LineStatus" ) );
+				group.put( "sum_qty", 0 );
+				group.put( "sum_base_price", 0 );
+				group.put( "sum_disc_price", 0 );
+				group.put( "sum_charge", 0 );
+				group.put( "count_order", 0 );
+				group.put( "sum_discount", 0 );
 			}
-			int quantity = new Integer(object.get("L_Quantity").toString());
-			int sumQuantity = group.getInt("sum_qty") + quantity;
+			int quantity = new Integer( object.get( "L_Quantity" ).toString() );
+			int sumQuantity = group.getInt( "sum_qty" ) + quantity;
 			group.put("sum_qty", sumQuantity);
 			
-			double discount = new Double(object.get("L_Discount").toString());
+			double discount = new Double( object.get( "L_Discount" ).toString() );
 
-			double extendedPrice = new Double(object.get("L_ExtendedPrice").toString());
-			double sumExtended = group.getDouble("sum_base_price") + extendedPrice;
-			group.put("sum_base_price", sumExtended);
+			double extendedPrice = new Double( object.get( "L_ExtendedPrice" ).toString() );
+			double sumExtended = group.getDouble( "sum_base_price" ) + extendedPrice;
+			group.put( "sum_base_price", sumExtended );
 
-			double sum_disc_price = group.getDouble("sum_disc_price") + (extendedPrice * (1-discount));
-			group.put("sum_disc_price", sum_disc_price);
+			double sum_disc_price = group.getDouble( "sum_disc_price" ) + ( extendedPrice*( 1 - discount ) );
+			group.put( "sum_disc_price", sum_disc_price );
 
-			double tax = new Double(object.get("L_Tax").toString());
-			double sum_charge = group.getDouble("sum_charge") + (extendedPrice * (1-discount) * (1 + tax));
-			group.put("sum_charge", sum_charge);
+			double tax = new Double( object.get( "L_Tax" ).toString() );
+			double sum_charge = group.getDouble( "sum_charge" ) + ( extendedPrice*( 1 - discount )*( 1 + tax ) );
+			group.put( "sum_charge", sum_charge );
 
-			int num_elements = group.getInt("count_order") + 1;
-			group.put("count_order", num_elements);
+			int num_elements = group.getInt( "count_order" ) + 1;
+			group.put( "count_order", num_elements );
 
-			double sum_discount = group.getDouble("sum_discount") + discount;
-			group.put("sum_discount", sum_discount);
+			double sum_discount = group.getDouble( "sum_discount" ) + discount;
+			group.put( "sum_discount", sum_discount );
 
-			result.put(key, group);
+			result.put( key, group );
 		}
 		
 		for (String key : result.keySet()) {
@@ -149,7 +164,7 @@ public class QuerySet {
 	
 	private void query2( DB database ) {
 		// Part
-		Pattern regex = Pattern.compile( "*12345678901234567890123456789012" );
+		Pattern regex = Pattern.compile( "12345678901234567890123456789012" );
 		BasicDBObject clause1 = new BasicDBObject( "P_Type", regex );   
 		BasicDBObject clause2 = new BasicDBObject( "P_Size", 1000 );
 		BasicDBList and = new BasicDBList();
@@ -321,9 +336,9 @@ public class QuerySet {
 		
 		resultTable = database.getCollection( "resultQuery2Sorted" );
 		BasicDBObject resultObject = new BasicDBObject();
-		resultObject.put("numResults", partSuppsRelation.size());
-		resultObject.put("result", resultOut);
-		resultTable.insert(resultObject);
+		resultObject.put( "numResults", partSuppsRelation.size() );
+		resultObject.put( "result", resultOut.results() );
+		resultTable.insert( resultObject );
 		
 //		int i = 0;
 //		BasicDBObject results = new BasicDBObject();
@@ -334,69 +349,69 @@ public class QuerySet {
 //		}		
 	}
 	
-	private double getSubquery2(DB database, int partKey) {
+	private double getSubquery2( DB database, int partKey ) {
 		// Region
-		BasicDBObject match = new BasicDBObject("$match", new BasicDBObject("R_Name", "12345678901234567890123456789012"));
+		BasicDBObject match = new BasicDBObject( "$match", new BasicDBObject( "R_Name", "12345678901234567890123456789012" ) );
 
-		BasicDBObject fields = new BasicDBObject("R_Name", 1);
-		fields.put("_id", 1);
-		BasicDBObject project = new BasicDBObject("$project", fields );
+		BasicDBObject fields = new BasicDBObject( "R_Name", 1 );
+		fields.put( "_id", 1 );
+		BasicDBObject project = new BasicDBObject( "$project", fields );
 
-		DBCollection regionColl = database.getCollection("region");
-		AggregationOutput regionOut = regionColl.aggregate(match, project);
+		DBCollection regionColl = database.getCollection( "region" );
+		AggregationOutput regionOut = regionColl.aggregate( match, project );
 		
 		// Nation
-		fields = new BasicDBObject("N_RegionKey", 1);
-		fields.put("_id", 1);
-		project = new BasicDBObject("$project", fields );
+		fields = new BasicDBObject( "N_RegionKey", 1 );
+		fields.put( "_id", 1 );
+		project = new BasicDBObject( "$project", fields );
 
-		DBCollection nationColl = database.getCollection("nation");
-		AggregationOutput nationOut = nationColl.aggregate(project);
+		DBCollection nationColl = database.getCollection( "nation" );
+		AggregationOutput nationOut = nationColl.aggregate( project );
 
 		
 		// Supplier
-		fields = new BasicDBObject("S_NationKey", 1);
-		fields.put("_id", 1);
-		project = new BasicDBObject("$project", fields );
+		fields = new BasicDBObject( "S_NationKey", 1 );
+		fields.put( "_id", 1 );
+		project = new BasicDBObject( "$project", fields );
 
-		DBCollection supplierColl = database.getCollection("supplier");
-		AggregationOutput supplierOut = supplierColl.aggregate(project);
+		DBCollection supplierColl = database.getCollection( "supplier" );
+		AggregationOutput supplierOut = supplierColl.aggregate( project );
 		
 		
 		// PartSupp
-		match = new BasicDBObject("$match", new BasicDBObject("PS_PartKey", partKey));
+		match = new BasicDBObject( "$match", new BasicDBObject( "PS_PartKey", partKey ) );
 		
-		fields = new BasicDBObject("PS_SuppKey", 1);
-		fields.put("PS_SupplyCost", 1);
-		fields.put("_id", 0);
-		project = new BasicDBObject("$project", fields );
+		fields = new BasicDBObject( "PS_SuppKey", 1 );
+		fields.put( "PS_SupplyCost", 1 );
+		fields.put( "_id", 0 );
+		project = new BasicDBObject( "$project", fields );
 
-		DBCollection partSuppColl = database.getCollection("partSupp");
-		AggregationOutput partSuppOut = partSuppColl.aggregate(match, project);
+		DBCollection partSuppColl = database.getCollection( "partSupp" );
+		AggregationOutput partSuppOut = partSuppColl.aggregate( match, project );
 		
 		Set<DBObject> nations = new HashSet<DBObject>();
-		for (DBObject region : regionOut.results()) {
-			for (DBObject nation : nationOut.results()) {
-				if (nation.get("N_RegionKey").equals(region.get("_id"))) {
-					nations.add(nation);
+		for ( DBObject region : regionOut.results() ) {
+			for ( DBObject nation : nationOut.results() ) {
+				if ( nation.get( "N_RegionKey" ).equals( region.get( "_id" ) ) ) {
+					nations.add( nation );
 				}
 			}
 		}
 		
 		Set<DBObject> suppliers = new HashSet<DBObject>();
-		for (DBObject nation : nations) {
-			for (DBObject supplier : supplierOut.results()) {
-				if (supplier.get("S_NationKey").equals(nation.get("_id"))) {
-					suppliers.add(supplier);
+		for ( DBObject nation : nations ) {
+			for ( DBObject supplier : supplierOut.results() ) {
+				if (supplier.get( "S_NationKey" ).equals( nation.get( "_id") ) ) {
+					suppliers.add( supplier );
 				}
 			}
 		}
 		
 		double minimum = Double.MAX_VALUE;
-		for (DBObject supplier : suppliers) {
-			for (DBObject partSupp : partSuppOut.results()) {
-				if (partSupp.get("PS_SuppKey").equals(supplier.get("_id"))) {
-					minimum = Math.min(minimum, new Double(partSupp.get("PS_SupplyCost").toString()));
+		for ( DBObject supplier : suppliers ) {
+			for ( DBObject partSupp : partSuppOut.results() ) {
+				if (partSupp.get( "PS_SuppKey" ).equals( supplier.get( "_id") ) ) {
+					minimum = Math.min( minimum, new Double( partSupp.get( "PS_SupplyCost" ).toString() ) );
 				}
 			}
 		}
@@ -404,4 +419,119 @@ public class QuerySet {
 		return minimum;
 	}
 
+	private void query3( DB database ) {
+		// LINEITEM
+		// els mesos comencen en 0
+		Calendar calendar = new GregorianCalendar( 2013,03,20 );
+		BasicDBObject match = new BasicDBObject( "$match", new BasicDBObject( "L_ShipDate", new BasicDBObject( "$gt", calendar.getTime() ) ) );
+
+		BasicDBObject fields = new BasicDBObject( "L_OrderKey", 1 );
+		fields.put( "L_ExtendedPrice", 1 );
+		fields.put( "L_Discount", 1 );		
+		fields.put( "_id", 1 );
+		BasicDBObject project = new BasicDBObject( "$project", fields );
+
+		DBCollection lineitemColl = database.getCollection( "lineitem" );
+		AggregationOutput lineitemOut = lineitemColl.aggregate( match, project );
+
+		// ORDERS
+		calendar = new GregorianCalendar( 2013,03,30 );
+		match = new BasicDBObject( "$match", new BasicDBObject( "O_OrderDate", new BasicDBObject( "$lt", calendar.getTime() ) ) );
+
+		fields = new BasicDBObject( "O_OrderDate", 1 );
+		fields.put( "O_ShipPriority", 1 );
+		fields.put( "O_CustKey", 1 );		
+		fields.put( "_id", 1 );
+		project = new BasicDBObject( "$project", fields );
+
+		DBCollection ordersColl = database.getCollection( "orders" );
+		AggregationOutput ordersOut = ordersColl.aggregate( match, project );
+		
+		// CUSTOMER
+		BasicDBObject clause = new BasicDBObject( "C_MktSegment", "12345678901234567890123456789012" );
+		match = new BasicDBObject( "$match", clause );
+
+		fields = new BasicDBObject( "_id", 1 );
+//		fields.put( "C_MktSegment", 0 );
+		project = new BasicDBObject( "$project", fields );
+		
+		DBCollection customerColl = database.getCollection( "customer" );
+		AggregationOutput customerOut = customerColl.aggregate( match, project );
+
+		// JOINS
+		// c_custkey = o_custkey
+		Map<String, DBObject> orders = new LinkedHashMap<String, DBObject>();
+		for ( DBObject order : ordersOut.results() ) 
+			for ( DBObject customer : customerOut.results() ) 
+				if ( customer.get( "_id" ).equals( order.get( "O_CustKey" ) ) ) 
+					orders.put( order.get( "_id" ).toString(), order );
+		
+		// l_orderkey = o_orderkey 
+		Map<String, DBObject> lineitems = new LinkedHashMap<String, DBObject>();
+		Map<String, DBObject> finalOrders = new LinkedHashMap<String, DBObject>();
+		for ( DBObject lineitem : lineitemOut.results() ) {
+			if ( orders.containsKey( lineitem.get( "L_OrderKey" ).toString() ) ) {
+				finalOrders.put( lineitem.get( "L_OrderKey" ).toString() , orders.get( lineitem.get( "L_OrderKey" ).toString() ) );
+				lineitems.put( lineitem.get( "_id" ).toString(), lineitem );
+			}
+		}
+				
+//		System.out.println( "lineitems --- " +  lineitems.size() );
+//		System.out.println( "finalOrders --- " +  finalOrders.size() );
+//		Tant a oracle com a mongo amb la segona tanda d'insercions feta la query retorna 361 linies, xaxi nais
+		
+		DBCollection resultColl = database.getCollection( "resultQuery3Normalized" );
+		Set<String> ordersAnalized = new HashSet<String>();		
+		
+		for ( String orderKey : finalOrders.keySet() ) {
+			Set<String> lineitemsAnalized = new HashSet<String>();
+			BasicDBObject document = new BasicDBObject();
+			double revenue = 0;
+			for ( String lineitemKey : lineitems.keySet() ) {
+				if ( orderKey.equals( (lineitems.get(lineitemKey)).get( "L_OrderKey" ).toString() ) ) {
+					lineitemsAnalized.add(lineitemKey);
+					double discount = new Double( ( lineitems.get( lineitemKey ) ).get( "L_Discount" ).toString() );
+					double extendedPrice = new Double( ( lineitems.get( lineitemKey ) ).get( "L_ExtendedPrice" ).toString() );
+					revenue += extendedPrice*( 1 - discount );
+				}
+			}
+			for ( String lineitemAnalized : lineitemsAnalized ) {
+				lineitems.remove(lineitemAnalized);
+			}
+			
+			document.put( "L_OrderKey", orderKey );
+			document.put( "revenue", revenue );
+			document.put( "O_OrderDate", finalOrders.get( orderKey ).get( "O_OrderDate" ) );
+			document.put( "O_ShipPriority", finalOrders.get( orderKey ).get( "O_ShipPriority" ) );
+			resultColl.insert( document );
+		}
+		
+		
+		
+		
+		fields = new BasicDBObject( "_id", 0 );
+		fields.put( "L_OrderKey", 1 );
+		fields.put( "revenue", 1 );
+		fields.put( "O_OrderDate", 1 );
+		fields.put( "O_ShipPriority", 1);
+		
+		project = new BasicDBObject( "$project", fields );
+		
+		BasicDBObject sortFields = new BasicDBObject( "revenue", -1 );
+		sortFields.put( "O_OrderDate", 1 );
+
+		BasicDBObject sort = new BasicDBObject( "$sort", sortFields );
+		AggregationOutput resultOut = resultColl.aggregate( project, sort );
+		
+		 BufferedWriter writer = null;
+	     try {
+	       writer = new BufferedWriter(new FileWriter(
+	           "./query3MongoNormalized.txt"));
+	       writer.write(resultOut.toString());
+	     } catch (IOException e) {
+	       e.printStackTrace();
+	     }
+	
+	}
 }
+

@@ -452,7 +452,6 @@ public class QuerySet {
 		match = new BasicDBObject( "$match", clause );
 
 		fields = new BasicDBObject( "_id", 1 );
-//		fields.put( "C_MktSegment", 0 );
 		project = new BasicDBObject( "$project", fields );
 		
 		DBCollection customerColl = database.getCollection( "customer" );
@@ -475,13 +474,9 @@ public class QuerySet {
 				lineitems.put( lineitem.get( "_id" ).toString(), lineitem );
 			}
 		}
-				
-//		System.out.println( "lineitems --- " +  lineitems.size() );
-//		System.out.println( "finalOrders --- " +  finalOrders.size() );
-//		Tant a oracle com a mongo amb la segona tanda d'insercions feta la query retorna 361 linies, xaxi nais
-		
+
 		DBCollection resultColl = database.getCollection( "resultQuery3Normalized" );
-		Set<String> ordersAnalized = new HashSet<String>();		
+		resultColl.drop();
 		
 		for ( String orderKey : finalOrders.keySet() ) {
 			Set<String> lineitemsAnalized = new HashSet<String>();
@@ -505,10 +500,7 @@ public class QuerySet {
 			document.put( "O_ShipPriority", finalOrders.get( orderKey ).get( "O_ShipPriority" ) );
 			resultColl.insert( document );
 		}
-		
-		
-		
-		
+	
 		fields = new BasicDBObject( "_id", 0 );
 		fields.put( "L_OrderKey", 1 );
 		fields.put( "revenue", 1 );
@@ -523,15 +515,10 @@ public class QuerySet {
 		BasicDBObject sort = new BasicDBObject( "$sort", sortFields );
 		AggregationOutput resultOut = resultColl.aggregate( project, sort );
 		
-		 BufferedWriter writer = null;
-	     try {
-	       writer = new BufferedWriter(new FileWriter(
-	           "./query3MongoNormalized.txt"));
-	       writer.write(resultOut.toString());
-	     } catch (IOException e) {
-	       e.printStackTrace();
-	     }
-	
+		int i = 0;
+		for ( DBObject result : resultOut.results() ) {
+			System.out.println( ++i + " - " + result );
+		}	
 	}
 }
 

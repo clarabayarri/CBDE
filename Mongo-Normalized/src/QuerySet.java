@@ -66,6 +66,20 @@ public class QuerySet {
 				" in nanoseconds --- with minimum " + Collections.min(timeDifferences) );
 		average += Collections.min( timeDifferences );
 		
+		timeDifferences = new ArrayList<Long>();
+		for ( int j = 0; j < 5; ++j ) {
+			Long start = System.nanoTime();
+			query4( database );
+			Long end = System.nanoTime();
+
+			timeDifferences.add( j, end-start );
+		}
+
+		System.out.println( "Query 4 took " + timeDifferences + 
+				" in nanoseconds --- with minimum " + Collections.min(timeDifferences) );
+		average += Collections.min( timeDifferences );
+		
+		
 		System.out.println( "\nAverage query time " + average/4 + " in nanoseconds\n" );
 
 	}
@@ -515,10 +529,103 @@ public class QuerySet {
 		BasicDBObject sort = new BasicDBObject( "$sort", sortFields );
 		AggregationOutput resultOut = resultColl.aggregate( project, sort );
 		
-		int i = 0;
-		for ( DBObject result : resultOut.results() ) {
-			System.out.println( ++i + " - " + result );
-		}	
+//		int i = 0;
+//		for ( DBObject result : resultOut.results() ) {
+//			System.out.println( ++i + " - " + result );
+//		}	
 	}
+	
+//	SELECT n_name, sum(l_extendedprice * (1 - l_discount)) as revenue
+
+//	FROM customer, orders, lineitem, supplier, nation, region
+
+//	WHERE c_custkey = o_custkey 
+
+//		AND l_orderkey = o_orderkey 
+//		AND l_suppkey =	s_suppkey 
+	
+//		AND c_nationkey = s_nationkey
+	
+//		AND s_nationkey = n_nationkey
+	
+//		AND	n_regionkey = r_regionkey 
+
+		//		AND r_name = '12345678901234567890123456789012' 
+	
+		//		AND o_orderdate >= date '30-APR-13' 
+		//		AND o_orderdate < date '30-APR-14'
+
+//	GROUP BY n_name
+//	ORDER BY revenue desc;
+	
+	private void query4( DB database ) {
+		// Region
+		BasicDBObject match = new BasicDBObject( "$match", new BasicDBObject( "R_Name", "12345678901234567890123456789012" ) );
+
+		BasicDBObject fields = new BasicDBObject( "_id", 1 );
+		BasicDBObject project = new BasicDBObject( "$project", fields );
+
+		DBCollection regionColl = database.getCollection( "region" );
+		AggregationOutput regionOut = regionColl.aggregate( match, project );
+		
+		// Orders 
+		GregorianCalendar calendar = new GregorianCalendar( 2013,03,30 );
+		BasicDBObject clause1 = new BasicDBObject( "O_OrderDate", new BasicDBObject( "$gt", calendar.getTime() ) );
+		
+		calendar = new GregorianCalendar( 2014,03,30 );
+		BasicDBObject clause2 = new BasicDBObject( "O_OrderDate", new BasicDBObject( "$lt", calendar.getTime() ) );
+		
+		BasicDBList and = new BasicDBList();
+		and.add( clause1 );
+		and.add( clause2 );
+		DBObject query = new BasicDBObject( "$and", and );
+		
+		match = new BasicDBObject( "$match", query );
+		
+		fields = new BasicDBObject( "O_CustKey", 1 );		
+		fields.put( "_id", 1 );
+		project = new BasicDBObject( "$project", fields );
+
+		DBCollection ordersColl = database.getCollection( "orders" );
+		AggregationOutput ordersOut = ordersColl.aggregate( match, project );
+		
+		// Nation
+		fields = new BasicDBObject( "_id", 1 );
+		fields.put( "N_Name", 1 );
+		fields.put( "N_RegionKey", 1 );
+		project = new BasicDBObject( "$project", fields );
+		
+		DBCollection nationColl = database.getCollection( "nation" );
+		AggregationOutput nationOut = nationColl.aggregate( project );
+		
+		// Supplier
+		fields = new BasicDBObject( "_id", 1 );
+		fields.put( "S_NationKey",  1 );
+		project = new BasicDBObject( "$project", fields );
+
+		DBCollection supplierColl = database.getCollection( "supplier" );
+		AggregationOutput supplierOut = supplierColl.aggregate( project );
+		
+		// Customer
+		fields = new BasicDBObject( "_id", 1 );
+		fields.put( "C_NationKey",  1 );
+		project = new BasicDBObject( "$project", fields );
+		
+		DBCollection customerColl = database.getCollection( "customer" );
+		AggregationOutput customerOut = customerColl.aggregate( match, project );
+		
+		// Lineitem
+		fields = new BasicDBObject( "L_ExtendedPrice", 1 );
+		fields.put( "L_Discount", 1 );
+		fields.put( "L_OrderKey", 1 );
+		fields.put( "L_SuppKey", 1 );
+		fields.put( "_id", 0 );
+		project = new BasicDBObject( "$project", fields );
+		
+		DBCollection myColl = database.getCollection( "lineitem" );
+		AggregationOutput out = myColl.aggregate( project );
+		
+	}
+	
 }
 

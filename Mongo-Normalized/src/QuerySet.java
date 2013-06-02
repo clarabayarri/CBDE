@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -497,15 +500,15 @@ public class QuerySet {
 			BasicDBObject document = new BasicDBObject();
 			double revenue = 0;
 			for ( String lineitemKey : lineitems.keySet() ) {
-				if ( orderKey.equals( (lineitems.get(lineitemKey)).get( "L_OrderKey" ).toString() ) ) {
-					lineitemsAnalized.add(lineitemKey);
+				if ( orderKey.equals( ( lineitems.get( lineitemKey ) ).get( "L_OrderKey" ).toString() ) ) {
+					lineitemsAnalized.add( lineitemKey );
 					double discount = new Double( ( lineitems.get( lineitemKey ) ).get( "L_Discount" ).toString() );
 					double extendedPrice = new Double( ( lineitems.get( lineitemKey ) ).get( "L_ExtendedPrice" ).toString() );
 					revenue += extendedPrice*( 1 - discount );
 				}
 			}
 			for ( String lineitemAnalized : lineitemsAnalized ) {
-				lineitems.remove(lineitemAnalized);
+				lineitems.remove( lineitemAnalized );
 			}
 			
 			document.put( "L_OrderKey", orderKey );
@@ -539,16 +542,16 @@ public class QuerySet {
 
 //	FROM customer, orders, lineitem, supplier, nation, region
 
-//	WHERE c_custkey = o_custkey 
+		//	WHERE c_custkey = o_custkey 
 
-//		AND l_orderkey = o_orderkey 
-//		AND l_suppkey =	s_suppkey 
+		//		AND l_orderkey = o_orderkey 
+		//		AND l_suppkey =	s_suppkey 
 	
-//		AND c_nationkey = s_nationkey
+		//		AND c_nationkey = s_nationkey
 	
-//		AND s_nationkey = n_nationkey
+		//		AND s_nationkey = n_nationkey
 	
-//		AND	n_regionkey = r_regionkey 
+		//		AND	n_regionkey = r_regionkey 
 
 		//		AND r_name = '12345678901234567890123456789012' 
 	
@@ -612,7 +615,7 @@ public class QuerySet {
 		project = new BasicDBObject( "$project", fields );
 		
 		DBCollection customerColl = database.getCollection( "customer" );
-		AggregationOutput customerOut = customerColl.aggregate( match, project );
+		AggregationOutput customerOut = customerColl.aggregate( project );
 		
 		// Lineitem
 		fields = new BasicDBObject( "L_ExtendedPrice", 1 );
@@ -623,7 +626,121 @@ public class QuerySet {
 		project = new BasicDBObject( "$project", fields );
 		
 		DBCollection myColl = database.getCollection( "lineitem" );
-		AggregationOutput out = myColl.aggregate( project );
+		AggregationOutput lineitemOut = myColl.aggregate( project );
+		
+		//JOINS
+		// n_regionkey = r_regionkey 
+		Map<String, DBObject> nations = new LinkedHashMap<String, DBObject>();
+		for ( DBObject region : regionOut.results() ) 
+			for ( DBObject nation : nationOut.results() ) 
+				if ( nation.get( "N_RegionKey" ).equals( region.get( "_id" ) ) ) 
+					nations.put( nation.get( "_id" ).toString(), nation );
+		
+		// s_nationkey = n_nationkey
+		Map<String, DBObject> suppliersWithNation = new LinkedHashMap<String, DBObject>();
+		for ( DBObject supplier : supplierOut.results() ) {
+			if (nations.containsKey( supplier.get( "S_NationKey" ).toString() ) ) {
+				suppliersWithNation.put( supplier.get( "_id" ).toString(), supplier );
+			}
+			else
+				nations.remove( supplier.get( "S_NationKey" ).toString() );
+		}
+		
+		// c_nationkey = s_nationkey
+		Map<String, DBObject> finalSuppliersWithNation = new LinkedHashMap<String, DBObject>();
+		Map<String, DBObject> customersWithSupplier = new LinkedHashMap<String, DBObject>();
+		Map<String, DBObject> finalNations = new LinkedHashMap<String, DBObject>();
+		for ( DBObject customer : customerOut.results() ) {
+			for ( String suppWithNationId : suppliersWithNation.keySet() ) {
+				if ( ( suppliersWithNation.get( suppWithNationId ).get( "S_NationKey" ) ).equals( customer.get( "C_NationKey" ) ) ) {
+					customersWithSupplier.put( customer.get( "_id" ).toString(), customer );
+					finalSuppliersWithNation.put( suppWithNationId, suppliersWithNation.get( suppWithNationId ) );
+		
+					if ( !finalNations.containsKey( customer.get( "C_NationKey" ).toString() ) )
+						finalNations.put( customer.get( "C_NationKey" ).toString(), nations.get( customer.get( "C_NationKey" ).toString() ) );
+				}
+			}
+		}
+		
+		// c_custkey = o_custkey
+		Map<String, DBObject> orders = new LinkedHashMap<String, DBObject>();
+		Map<String, String> ordersNations = new LinkedHashMap<String, String>();
+		for ( DBObject order : ordersOut.results() ) { 
+			if ( customersWithSupplier.containsKey( ( order.get( "O_CustKey" ) ).toString() ) ) {
+				orders.put( order.get( "_id" ).toString(), order );
+				String customerId = order.get( "O_CustKey" ).toString();
+				String customerNationKey = customersWithSupplier.get( customerId ).get( "C_NationKey" ).toString();
+				String nationName = finalNations.get( customerNationKey ).get( "N_Name" ).toString();
+				ordersNations.put( order.get( "_id" ).toString(), nationName );
+			}
+		}
+		
+		// l_orderkey = o_orderkey 
+		// ordersNations
+		
+		// l_suppkey =	s_suppkey
+		// suppliersWithNation
+
+		Map<String, ArrayList<BasicDBObject>> lineitems = new LinkedHashMap<String, ArrayList<BasicDBObject>>();
+		for ( DBObject lineitem : lineitemOut.results() ) {
+			if ( finalSuppliersWithNation.containsKey( lineitem.get( "L_SuppKey" ).toString() ) && orders.containsKey( lineitem.get( "L_OrderKey" ).toString() ) ) {
+				ArrayList <BasicDBObject> aux = new ArrayList <BasicDBObject> ();
+				BasicDBObject resultLineitem = new BasicDBObject ( "L_ExtendedPrice", lineitem.get( "L_ExtendedPrice" ) );
+				resultLineitem.put( "L_Discount", lineitem.get( "L_Discount" ) );
+				String nationName = ordersNations.get( lineitem.get( "L_OrderKey" ).toString() ); 
+				if ( lineitems.containsKey( nationName ) ) {
+					aux = lineitems.get( nationName );
+					aux.add( resultLineitem );
+					lineitems.remove( nationName );
+					lineitems.put( nationName, aux );
+				}
+				else {
+					aux.add( resultLineitem );
+					lineitems.put( nationName, aux );
+				}
+			}
+		}
+		
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		
+//		SELECT n_name, sum(l_extendedprice * (1 - l_discount)) as revenue
+
+//		GROUP BY n_name
+//		ORDER BY revenue desc;
+		
+		DBCollection resultColl = database.getCollection( "resultQuery4Normalized" );
+		resultColl.drop();
+		
+		for ( String nationName : lineitems.keySet() ) {
+			BasicDBObject document = new BasicDBObject();
+			double revenue = 0;
+			ArrayList <BasicDBObject> nationResults = lineitems.get( nationName ); 
+			for ( int i = 0; i < nationResults.size(); ++i ) {
+				double discount = new Double( ( nationResults.get( i ) ).get( "L_Discount" ).toString() );
+				double extendedPrice = new Double( ( nationResults.get( i ) ).get( "L_ExtendedPrice" ).toString() );
+				revenue += extendedPrice*( 1 - discount );
+			}
+			document.put( "N_Name", nationName );
+			document.put( "revenue", revenue );
+			resultColl.insert( document );
+	    }
+	
+	
+		fields = new BasicDBObject( "_id", 0 );
+		fields.put( "N_Name", 1 );
+		fields.put( "revenue", 1 );
+		
+		project = new BasicDBObject( "$project", fields );
+		
+		BasicDBObject sortFields = new BasicDBObject( "revenue", -1 );
+
+		BasicDBObject sort = new BasicDBObject( "$sort", sortFields );
+		AggregationOutput resultOut = resultColl.aggregate( project, sort );
+		
+		int i = 0;
+		for ( DBObject result : resultOut.results() ) {
+			System.out.println( ++i + " - " + result );
+		}	
 		
 	}
 	

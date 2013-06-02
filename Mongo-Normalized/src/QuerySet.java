@@ -44,39 +44,24 @@ public class QuerySet {
 		average += Collections.min(timeDifferences);
 		
 		timeDifferences = new ArrayList<Long>();
-		for ( int j = 0; j < 5; ++j ) {
-			Long start = System.nanoTime();
-			query2( database );
-			Long end = System.nanoTime();
-
-			timeDifferences.add( j, end-start );
-		}
+		for ( int j = 0; j < 5; ++j ) 
+			timeDifferences.add(j, query3(database));
 
 		System.out.println( "Query 2 took " + timeDifferences + 
 				" in nanoseconds --- with minimum " + Collections.min(timeDifferences) );
 		average += Collections.min( timeDifferences );
 		
 		timeDifferences = new ArrayList<Long>();
-		for ( int j = 0; j < 5; ++j ) {
-			Long start = System.nanoTime();
-			query3( database );
-			Long end = System.nanoTime();
-
-			timeDifferences.add( j, end-start );
-		}
+		for ( int j = 0; j < 5; ++j )
+			timeDifferences.add(j, query3(database));
 
 		System.out.println( "Query 3 took " + timeDifferences + 
 				" in nanoseconds --- with minimum " + Collections.min(timeDifferences) );
 		average += Collections.min( timeDifferences );
 		
 		timeDifferences = new ArrayList<Long>();
-		for ( int j = 0; j < 5; ++j ) {
-			Long start = System.nanoTime();
-			query4( database );
-			Long end = System.nanoTime();
-
-			timeDifferences.add( j, end-start );
-		}
+		for ( int j = 0; j < 5; ++j ) 
+			timeDifferences.add(j, query4(database));
 
 		System.out.println( "Query 4 took " + timeDifferences + 
 				" in nanoseconds --- with minimum " + Collections.min(timeDifferences) );
@@ -179,7 +164,8 @@ public class QuerySet {
 //		}
 	}
 	
-	private void query2( DB database ) {
+	private Long query2( DB database ) {
+		Long start = System.nanoTime();
 		// Part
 		Pattern regex = Pattern.compile( "12345678901234567890123456789012" );
 		BasicDBObject clause1 = new BasicDBObject( "P_Type", regex );   
@@ -351,6 +337,8 @@ public class QuerySet {
 		
 		AggregationOutput resultOut = resultTable.aggregate( project, sort );		
 		
+		Long end = System.nanoTime();
+		
 		resultTable = database.getCollection( "resultQuery2Sorted" );
 		BasicDBObject resultObject = new BasicDBObject();
 		resultObject.put( "numResults", partSuppsRelation.size() );
@@ -363,7 +351,10 @@ public class QuerySet {
 //			results.put( Integer.toString(i), result );
 //			System.out.println( result );
 //			++i;
-//		}		
+//		}
+
+		return end-start;
+		
 	}
 	
 	private double getSubquery2( DB database, int partKey ) {
@@ -436,7 +427,8 @@ public class QuerySet {
 		return minimum;
 	}
 
-	private void query3( DB database ) {
+	private Long query3( DB database ) {
+		Long start = System.nanoTime();
 		// LINEITEM
 		// els mesos comencen en 0
 		Calendar calendar = new GregorianCalendar( 2013,03,20 );
@@ -532,10 +524,13 @@ public class QuerySet {
 		BasicDBObject sort = new BasicDBObject( "$sort", sortFields );
 		AggregationOutput resultOut = resultColl.aggregate( project, sort );
 		
+		Long end = System.nanoTime();
+		
 //		int i = 0;
 //		for ( DBObject result : resultOut.results() ) {
 //			System.out.println( ++i + " - " + result );
 //		}	
+		return end-start;
 	}
 	
 //	SELECT n_name, sum(l_extendedprice * (1 - l_discount)) as revenue
@@ -561,8 +556,9 @@ public class QuerySet {
 //	GROUP BY n_name
 //	ORDER BY revenue desc;
 	
-	private void query4( DB database ) {
+	private long query4( DB database ) {
 		// Region
+		Long start = System.nanoTime();
 		BasicDBObject match = new BasicDBObject( "$match", new BasicDBObject( "R_Name", "12345678901234567890123456789012" ) );
 
 		BasicDBObject fields = new BasicDBObject( "_id", 1 );
@@ -747,10 +743,14 @@ public class QuerySet {
 		BasicDBObject sort = new BasicDBObject( "$sort", sortFields );
 		AggregationOutput resultOut = resultColl.aggregate( project, sort );
 		
-		int i = 0;
-		for ( DBObject result : resultOut.results() ) {
-			System.out.println( ++i + " - " + result );
-		}	
+		Long end = System.nanoTime();
+		
+//		int i = 0;
+//		for ( DBObject result : resultOut.results() ) {
+//			System.out.println( ++i + " - " + result );
+//		}	
+		
+		return end-start;
 		
 	}
 	

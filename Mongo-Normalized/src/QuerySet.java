@@ -573,7 +573,7 @@ public class QuerySet {
 		
 		// Orders 
 		GregorianCalendar calendar = new GregorianCalendar( 2013,03,30 );
-		BasicDBObject clause1 = new BasicDBObject( "O_OrderDate", new BasicDBObject( "$gt", calendar.getTime() ) );
+		BasicDBObject clause1 = new BasicDBObject( "O_OrderDate", new BasicDBObject( "$gte", calendar.getTime() ) );
 		
 		calendar = new GregorianCalendar( 2014,03,30 );
 		BasicDBObject clause2 = new BasicDBObject( "O_OrderDate", new BasicDBObject( "$lt", calendar.getTime() ) );
@@ -652,7 +652,7 @@ public class QuerySet {
 		Map<String, DBObject> finalNations = new LinkedHashMap<String, DBObject>();
 		for ( DBObject customer : customerOut.results() ) {
 			for ( String suppWithNationId : suppliersWithNation.keySet() ) {
-				if ( ( suppliersWithNation.get( suppWithNationId ).get( "S_NationKey" ) ).equals( customer.get( "C_NationKey" ) ) ) {
+				if ( suppliersWithNation.get( suppWithNationId ).get( "S_NationKey" ).equals( customer.get( "C_NationKey" ) ) ) {
 					customersWithSupplier.put( customer.get( "_id" ).toString(), customer );
 					finalSuppliersWithNation.put( suppWithNationId, suppliersWithNation.get( suppWithNationId ) );
 		
@@ -673,17 +673,27 @@ public class QuerySet {
 				String nationName = finalNations.get( customerNationKey ).get( "N_Name" ).toString();
 				ordersNations.put( order.get( "_id" ).toString(), nationName );
 			}
+			else {
+				customersWithSupplier.remove( ( order.get( "O_CustKey" ) ).toString() );
+			}
 		}
-		
+
+		// FAILS IN THE FIRST =
 		// l_orderkey = o_orderkey 
 		// ordersNations
-		
 		// l_suppkey =	s_suppkey
 		// suppliersWithNation
 
 		Map<String, ArrayList<BasicDBObject>> lineitems = new LinkedHashMap<String, ArrayList<BasicDBObject>>();
 		for ( DBObject lineitem : lineitemOut.results() ) {
-			if ( finalSuppliersWithNation.containsKey( lineitem.get( "L_SuppKey" ).toString() ) && orders.containsKey( lineitem.get( "L_OrderKey" ).toString() ) ) {
+			if ( finalSuppliersWithNation.containsKey( lineitem.get( "L_SuppKey" ).toString() ) 
+					&& orders.containsKey( lineitem.get( "L_OrderKey" ).toString() ) 
+//					&& ordersNations.get( lineitem.get( "L_OrderKey" ).toString() ).equals( finalSuppliersWithNation.get( lineitem.get( "L_SuppKey" ).toString() ).get( "S_NationKey" ).toString() )
+//					&& ordersNations.get( lineitem.get( "L_OrderKey" ).toString() ).equals( customersWithSupplier.get( orders.get( lineitem.get( "L_OrderKey" ).toString() ).get( "O_CustKey" ).toString() ).get( "C_NationKey" ).toString() )
+//					&& customersWithSupplier.containsKey( orders.get( lineitem.get( "L_OrderKey" ).toString() ).get( "O_CustKey" ).toString() )
+//					&& ordersNations.containsKey( customersWithSupplier.get( orders.get( lineitem.get( "L_OrderKey" ).toString() ).get( "O_CustKey" ).toString() ).get( "C_NationKey" ).toString() ) 
+					
+					) {
 				ArrayList <BasicDBObject> aux = new ArrayList <BasicDBObject> ();
 				BasicDBObject resultLineitem = new BasicDBObject ( "L_ExtendedPrice", lineitem.get( "L_ExtendedPrice" ) );
 				resultLineitem.put( "L_Discount", lineitem.get( "L_Discount" ) );

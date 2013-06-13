@@ -39,6 +39,13 @@ public class DataInserter {
 	public void initialInsert(DB database) {
 		System.out.println("-------- Initial insertion ------");
 		
+		// Indexes
+		database.getCollection("lineitem").createIndex(new BasicDBObject("L_ShipDate", 1));
+		database.getCollection("part").createIndex(new BasicDBObject("P_Type", 1));
+		database.getCollection("part").createIndex(new BasicDBObject("P_Size", 1));
+		database.getCollection("region").createIndex(new BasicDBObject("R_Name", 1));
+		database.getCollection("customer").createIndex(new BasicDBObject("C_MktSegment", 1));
+		
 		getRegionObjects();
 		getNationObjects();
 		getPartObjects();

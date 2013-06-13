@@ -47,7 +47,7 @@ public class DataInserter {
 	private List<Node> lineitems = new ArrayList<Node>();
 
 	Relationship relationship;
-	
+
 	private static enum RelTypes implements RelationshipType
 	{
 		// Region - Nation
@@ -55,7 +55,16 @@ public class DataInserter {
 		HAS_NATION,
 		// Nation - Supplier
 		BELONGS_TO_NATION,
-		HAS_SUPPLIER
+		HAS_SUPPLIER,
+		// Part - PartSupp
+		BELONGS_TO_PART,
+		PART_HAS_PARTSUPP,
+		// Supplier - PartSupp
+		BELONGS_TO_SUPPLIER,
+		SUPPLIER_HAS_PARTSUPP,
+		// Nation - Customer
+		HAS_CUSTOMER,
+		CUSTOMER_BELONGS_TO_NATION
 	}
 
 	public void initialInsert() {
@@ -69,16 +78,16 @@ public class DataInserter {
 		Long timeDifference = endDate.getTime() - startDate.getTime();
 		System.out.println("Insertion took " + timeDifference + " milliseconds.\n");
 
-		for ( int i = 0; i < regions.size(); ++i ) {
-			System.out.print( "R_RegionKey  ---  " + regions.get(i).getProperty( "R_RegionKey" ) + "\n" );
-			System.out.print( "R_Name  ---  " + regions.get(i).getProperty( "R_Name" ) + "\n" );
-			System.out.print( "R_Comment  ---  " + regions.get(i).getProperty( "R_Comment" ) + "\n" );
-			System.out.print( "skip  ---  " + regions.get(i).getProperty( "skip" ) + "\n" );
-			for (Relationship nation : regions.get(i).getRelationships()) {
-				System.out.println("\tRelated to " + nation.getEndNode().getProperty("N_NationKey"));
-			}
-			System.out.println();
-		}
+		//		for ( int i = 0; i < regions.size(); ++i ) {
+		//			System.out.print( "R_RegionKey  ---  " + regions.get(i).getProperty( "R_RegionKey" ) + "\n" );
+		//			System.out.print( "R_Name  ---  " + regions.get(i).getProperty( "R_Name" ) + "\n" );
+		//			System.out.print( "R_Comment  ---  " + regions.get(i).getProperty( "R_Comment" ) + "\n" );
+		//			System.out.print( "skip  ---  " + regions.get(i).getProperty( "skip" ) + "\n" );
+		//			for (Relationship nation : regions.get(i).getRelationships(RelTypes.HAS_NATION)) {
+		//				System.out.println("\tRelated to " + nation.getEndNode().getProperty("N_NationKey"));
+		//			}
+		//			System.out.println();
+		//		}
 	}
 
 	private Integer getRandomInteger() {
@@ -142,7 +151,6 @@ public class DataInserter {
 			Integer id = getRandomInteger();
 			while(nationIds.contains(id)) id = getRandomInteger();
 			nationIds.add(id);
-			nations.add( nationNode );
 
 			nationNode.setProperty("N_NationKey", id);
 			nationNode.setProperty("N_Name", getRandomString(64));
@@ -155,6 +163,8 @@ public class DataInserter {
 
 			nationNode.setProperty("N_Comment", getRandomString(160));
 			nationNode.setProperty("skip", getRandomString(64));
+
+			nations.add( nationNode );
 		}
 	}
 
@@ -218,6 +228,79 @@ public class DataInserter {
 		}
 	}
 
+	private void insertPartSuppliers(Transaction tx) {
+		// PS_PartKey, PS_SuppKey, PS_AvailQty, PS_SupplyCost, PS_Comment, skip
+
+		int maxValues = (int) (SF * 800000);
+		for (int i = 1; i <= maxValues; ++i) {
+			Node partsuppNode = graphDB.createNode();
+
+			int suppIndex = random.nextInt(supplierIds.size());
+			Integer suppid = supplierIds.get(suppIndex);
+			int partIndex = random.nextInt(partIds.size());
+			Integer partid = partIds.get(partIndex);
+			while(partSuppIds.get(suppid) != null && partSuppIds.get(suppid).contains(partid)) {
+				suppid = supplierIds.get(random.nextInt(supplierIds.size()));
+				partid = partIds.get(random.nextInt(partIds.size()));
+			}
+			if (partSuppIds.get(suppid) == null) partSuppIds.put(suppid, new ArrayList<Integer>());
+			partSuppIds.get(suppid).add(partid);
+			//document.put("PS_PartKey", partid);
+			Node part = parts.get(partIndex);
+			part.createRelationshipTo(partsuppNode, RelTypes.PART_HAS_PARTSUPP);
+			partsuppNode.createRelationshipTo(part, RelTypes.BELONGS_TO_PART);
+
+			// PS_PartKey
+			Node supplier = suppliers.get(suppIndex);
+			supplier.createRelationshipTo(partsuppNode, RelTypes.SUPPLIER_HAS_PARTSUPP);
+			partsuppNode.createRelationshipTo(supplier, RelTypes.BELONGS_TO_SUPPLIER);
+
+			partsuppNode.setProperty("PS_PartKey", partid);
+			partsuppNode.setProperty("PS_AvailQty", getRandomInteger());
+			partsuppNode.setProperty("PS_SupplyCost", getRandomDouble(13));
+			partsuppNode.setProperty("PS_Comment", getRandomString(200));
+			partsuppNode.setProperty("skip", getRandomString(64));
+
+			List<Node> suppParts = partSupps.get(suppid);
+			if (suppParts == null) suppParts = new ArrayList<Node>();
+			suppParts.add(partsuppNode);
+			partSupps.put(suppid, suppParts);
+		}
+	}
+
+	private void insertCustomers(Transaction tx) {
+		// C_CustKey, C_Name, C_Address, C_NationKey, C_Phone, C_AcctBal, C_MktSegment, C_Comment, skip
+
+		int maxValues = (int) (SF * 150000);
+		for (int i = 1; i <= maxValues; ++i) {
+			Node customerNode = graphDB.createNode();
+
+			Integer id = getRandomInteger();
+			while(customerIds.contains(id)) id = getRandomInteger();
+			customerIds.add(id);
+			customerNode.setProperty("C_CustKey", id);
+			customerNode.setProperty("C_Name", getRandomString(64));
+			customerNode.setProperty("C_Address", getRandomString(64));
+			
+			Node nation = nations.get(random.nextInt(nationIds.size()));
+			nation.createRelationshipTo(customerNode, RelTypes.HAS_CUSTOMER);
+			customerNode.createRelationshipTo(nation, RelTypes.CUSTOMER_BELONGS_TO_NATION);
+			
+			customerNode.setProperty("C_Phone", getRandomString(64));
+			customerNode.setProperty("C_AcctBal", getRandomDouble(13));
+			// With probability 0.1, set the value to be queried
+			if (random.nextInt(10) == 0)
+				customerNode.setProperty("C_MktSegment", "12345678901234567890123456789012");
+			else
+				customerNode.setProperty("C_MktSegment", getRandomString(64));
+			customerNode.setProperty("C_Comment", getRandomString(120));
+			customerNode.setProperty("skip", getRandomString(64));
+
+			customers.add(customerNode);
+		}
+	}
+
+
 	void createDb() {
 		clearDb();
 		graphDB = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
@@ -228,6 +311,8 @@ public class DataInserter {
 			insertNations(tx);
 			insertParts(tx);
 			insertSuppliers(tx);
+			insertPartSuppliers(tx);
+			insertCustomers(tx);
 			tx.success();
 		}
 		finally {

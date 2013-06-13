@@ -7,3 +7,6 @@
 
 *.DS_Store
 *.metadata\*
+
+neo4j-normalized-db/**
+neo4j-normalized-db

@@ -64,7 +64,13 @@ public class DataInserter {
 		SUPPLIER_HAS_PARTSUPP,
 		// Nation - Customer
 		HAS_CUSTOMER,
-		CUSTOMER_BELONGS_TO_NATION
+		CUSTOMER_BELONGS_TO_NATION,
+		// Customer - Order
+		HAS_ORDER,
+		BELONGS_TO_CUSTOMER,
+		// Order - Lineitem
+		HAS_LINEITEM,
+		BELONGS_TO_ORDER
 	}
 
 	public void initialInsert() {
@@ -281,11 +287,11 @@ public class DataInserter {
 			customerNode.setProperty("C_CustKey", id);
 			customerNode.setProperty("C_Name", getRandomString(64));
 			customerNode.setProperty("C_Address", getRandomString(64));
-			
+
 			Node nation = nations.get(random.nextInt(nationIds.size()));
 			nation.createRelationshipTo(customerNode, RelTypes.HAS_CUSTOMER);
 			customerNode.createRelationshipTo(nation, RelTypes.CUSTOMER_BELONGS_TO_NATION);
-			
+
 			customerNode.setProperty("C_Phone", getRandomString(64));
 			customerNode.setProperty("C_AcctBal", getRandomDouble(13));
 			// With probability 0.1, set the value to be queried
@@ -297,6 +303,94 @@ public class DataInserter {
 			customerNode.setProperty("skip", getRandomString(64));
 
 			customers.add(customerNode);
+		}
+	}
+
+	private void insertOrders(Transaction tx) {
+		// O_OrderKey, O_CustKey, O_OrderStatus, O_TotalPrice, O_OrderDate, O_OrderPriority, O_Clerk, O_ShipPriority, O_Comment, skip
+
+		int maxValues = (int) (SF * 1500000);
+		for (int i = 1; i <= maxValues; ++i) {
+			Node orderNode = graphDB.createNode();
+
+			Integer id = getRandomInteger();
+			while(orderIds.contains(id)) id = getRandomInteger();
+			orderIds.add(id);
+			orderNode.setProperty("O_OrderKey", id);
+
+			// O_CustKey
+			int index = random.nextInt(customerIds.size());
+			Node customer = customers.get(index);
+			customer.createRelationshipTo(orderNode, RelTypes.HAS_ORDER);
+			orderNode.createRelationshipTo(customer, RelTypes.BELONGS_TO_CUSTOMER);
+
+			orderNode.setProperty("O_OrderStatus", getRandomString(64));
+			orderNode.setProperty("O_TotalPrice", getRandomInteger());
+			// With probability 0.05, set the date to be queried
+			if (random.nextInt(20) == 0) {
+				Calendar calendar = new GregorianCalendar(2013,4,29);
+				orderNode.setProperty("O_OrderDate", calendar.getTime().getTime());
+			}
+			else
+				orderNode.setProperty("O_OrderDate", getRandomDate().getTime());
+			orderNode.setProperty("O_OrderPriority", getRandomString(15));
+			orderNode.setProperty("O_Clerk", getRandomString(64));
+			orderNode.setProperty("O_ShipPriority", getRandomInteger());
+			orderNode.setProperty("O_Comment", getRandomString(80));
+			orderNode.setProperty("skip", getRandomString(64));
+
+			orders.add(orderNode);
+		}
+	}
+
+	private void insertLineitems(Transaction tx) {
+		// L_OrderKey, L_PartKey, L_SuppKey, L_LineNumber, L_Quantity, L_ExtendedPrice, L_Discount,
+		// L_Tax, L_ReturnFlag, L_LineStatus, L_ShipDate, L_CommitDate, L_ReceiptDate, L_ShipInstruct, L_ShipMode, L_Comment, skip
+
+		int maxValues = (int) (SF * 6000000);
+		for (int i = 1; i <= maxValues; ++i) {
+			Node lineitemNode = graphDB.createNode();
+
+			// L_OrderKey
+			int index = random.nextInt(orderIds.size());
+			Node order = orders.get(index);
+			order.createRelationshipTo(lineitemNode, RelTypes.HAS_LINEITEM);
+			lineitemNode.createRelationshipTo(order, RelTypes.BELONGS_TO_ORDER);
+			
+			Integer id = orderIds.get(index);
+
+			if (lineItemIds.get(id) == null) lineItemIds.put(id, 1000);
+			Integer lineId = lineItemIds.get(id) + 1;
+			lineItemIds.put(id, lineId);
+			//document.put("L_OrderKey", id);
+			Integer suppId = supplierIds.get(random.nextInt(supplierIds.size()));
+			Integer partId = partSuppIds.get(suppId).get(random.nextInt(partSuppIds.get(suppId).size()));
+			lineitemNode.setProperty("L_PartKey", partId);
+			lineitemNode.setProperty("L_SuppKey", suppId);
+			lineitemNode.setProperty("L_LineNumber", lineId);
+			lineitemNode.setProperty("L_Quantity", getRandomInteger());
+			lineitemNode.setProperty("L_ExtendedPrice", getRandomDouble(13));
+			lineitemNode.setProperty("L_Discount", getRandomDouble(13));
+			lineitemNode.setProperty("L_Tax", getRandomDouble(13));
+			lineitemNode.setProperty("L_ReturnFlag", getRandomString(64));
+			lineitemNode.setProperty("L_LineStatus", getRandomString(64));
+			// With probability 0.05, set the date to Apr 30 2013
+			if (random.nextInt(20) == 0) {
+				Calendar calendar = new GregorianCalendar(2013,4,30);
+				lineitemNode.setProperty("L_ShipDate", calendar.getTime().getTime());
+			}
+			else
+				lineitemNode.setProperty("L_ShipDate", getRandomDate().getTime());
+			lineitemNode.setProperty("L_CommitDate", getRandomDate().getTime());
+			if (random.nextInt(20) != 0)
+				lineitemNode.setProperty("L_ReceiptDate", getRandomDate().getTime());
+			lineitemNode.setProperty("L_ShipInstruct", getRandomString(64));
+			lineitemNode.setProperty("L_ShipMode", getRandomString(64));
+			if (random.nextInt(20) != 0)
+				lineitemNode.setProperty("L_Comment", getRandomString(64));
+
+			lineitemNode.setProperty("skip", getRandomString(64));
+			lineitems.add(lineitemNode);
 		}
 	}
 
@@ -313,6 +407,8 @@ public class DataInserter {
 			insertSuppliers(tx);
 			insertPartSuppliers(tx);
 			insertCustomers(tx);
+			insertOrders(tx);
+			insertLineitems(tx);
 			tx.success();
 		}
 		finally {

@@ -1,5 +1,3 @@
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -14,8 +12,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 
 public class DataInserter {
@@ -23,8 +19,6 @@ public class DataInserter {
 	private Random random = new Random(3l);
 
 	private float SF = 0.00333333f;
-
-	private static final String DB_PATH = "../neo4j-normalized-db";
 
 	private List<Integer> regionIds = new ArrayList<Integer>();
 	private List<Integer> nationIds = new ArrayList<Integer>();
@@ -34,8 +28,6 @@ public class DataInserter {
 	private List<Integer> customerIds = new ArrayList<Integer>();
 	private List<Integer> orderIds = new ArrayList<Integer>();
 	private Map<Integer, Integer> lineItemIds = new HashMap<Integer, Integer>();
-
-	GraphDatabaseService graphDB;
 
 	private List<Node> regions = new ArrayList<Node>();
 	private List<Node> nations = new ArrayList<Node>();
@@ -73,12 +65,26 @@ public class DataInserter {
 		BELONGS_TO_ORDER
 	}
 
-	public void initialInsert() {
+	public void initialInsert( GraphDatabaseService graphDB ) {
 
 		System.out.println("-------- Initial insertion ------");
 
 		Date startDate = new Date();
-		createDb();
+		Transaction tx = graphDB.beginTx();
+		try {
+			insertRegions( tx, graphDB );
+			insertNations( tx, graphDB );
+			insertParts( tx, graphDB );
+			insertSuppliers( tx, graphDB );
+			insertPartSuppliers( tx, graphDB );
+			insertCustomers( tx, graphDB );
+			insertOrders( tx, graphDB );
+			insertLineitems( tx, graphDB );
+			tx.success();
+		}
+		finally {
+			tx.finish();
+		}
 		Date endDate = new Date();
 
 		Long timeDifference = endDate.getTime() - startDate.getTime();
@@ -127,7 +133,7 @@ public class DataInserter {
 		return new java.sql.Date(calendar.getTimeInMillis());
 	}
 
-	private void insertRegions(Transaction tx) {
+	private void insertRegions( Transaction tx, GraphDatabaseService graphDB ) {
 		for ( int i = 1; i <= 5; ++i ) {
 			Integer id = getRandomInteger();
 			Node regionNode = graphDB.createNode();
@@ -149,7 +155,7 @@ public class DataInserter {
 		}
 	}
 
-	private void insertNations(Transaction tx) {
+	private void insertNations( Transaction tx, GraphDatabaseService graphDB ) {
 		// N_NationKey, N_Name, N_RegionKey, N_Comment, skip
 		for ( int i = 1; i <= 25; ++i ) {
 			Node nationNode = graphDB.createNode();
@@ -174,7 +180,7 @@ public class DataInserter {
 		}
 	}
 
-	private void insertParts(Transaction tx) {
+	private void insertParts( Transaction tx, GraphDatabaseService graphDB ) {
 		// P_PartKey, P_Name, P_Mfgr, P_Brand, P_Type, P_Size, P_Container, P_RetailPrice, P_Comment, skip
 
 		int maxValues = (int) (SF * 200000);
@@ -206,7 +212,7 @@ public class DataInserter {
 		}
 	}
 
-	private void insertSuppliers(Transaction tx) {
+	private void insertSuppliers( Transaction tx, GraphDatabaseService graphDB ) {
 		// S_SuppKey, S_Name, S_Address, S_NationKey, S_Phone, S_AcctBal, S_Comment, skip
 
 		int maxValues = (int) (SF * 10000);
@@ -234,7 +240,7 @@ public class DataInserter {
 		}
 	}
 
-	private void insertPartSuppliers(Transaction tx) {
+	private void insertPartSuppliers( Transaction tx, GraphDatabaseService graphDB ) {
 		// PS_PartKey, PS_SuppKey, PS_AvailQty, PS_SupplyCost, PS_Comment, skip
 
 		int maxValues = (int) (SF * 800000);
@@ -274,7 +280,7 @@ public class DataInserter {
 		}
 	}
 
-	private void insertCustomers(Transaction tx) {
+	private void insertCustomers( Transaction tx, GraphDatabaseService graphDB ) {
 		// C_CustKey, C_Name, C_Address, C_NationKey, C_Phone, C_AcctBal, C_MktSegment, C_Comment, skip
 
 		int maxValues = (int) (SF * 150000);
@@ -306,7 +312,7 @@ public class DataInserter {
 		}
 	}
 
-	private void insertOrders(Transaction tx) {
+	private void insertOrders( Transaction tx, GraphDatabaseService graphDB ) {
 		// O_OrderKey, O_CustKey, O_OrderStatus, O_TotalPrice, O_OrderDate, O_OrderPriority, O_Clerk, O_ShipPriority, O_Comment, skip
 
 		int maxValues = (int) (SF * 1500000);
@@ -343,7 +349,7 @@ public class DataInserter {
 		}
 	}
 
-	private void insertLineitems(Transaction tx) {
+	private void insertLineitems( Transaction tx, GraphDatabaseService graphDB ) {
 		// L_OrderKey, L_PartKey, L_SuppKey, L_LineNumber, L_Quantity, L_ExtendedPrice, L_Discount,
 		// L_Tax, L_ReturnFlag, L_LineStatus, L_ShipDate, L_CommitDate, L_ReceiptDate, L_ShipInstruct, L_ShipMode, L_Comment, skip
 
@@ -392,57 +398,5 @@ public class DataInserter {
 			lineitemNode.setProperty("skip", getRandomString(64));
 			lineitems.add(lineitemNode);
 		}
-	}
-
-
-	void createDb() {
-		clearDb();
-		graphDB = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
-		registerShutdownHook( graphDB );
-		Transaction tx = graphDB.beginTx();
-		try {
-			insertRegions(tx);
-			insertNations(tx);
-			insertParts(tx);
-			insertSuppliers(tx);
-			insertPartSuppliers(tx);
-			insertCustomers(tx);
-			insertOrders(tx);
-			insertLineitems(tx);
-			tx.success();
-		}
-		finally {
-			tx.finish();
-		}
-	}
-
-	private void clearDb() {
-		try {
-			FileUtils.deleteRecursively( new File( DB_PATH ) );
-		}
-		catch ( IOException e ) {
-			throw new RuntimeException( e );
-		}
-	}
-
-	void shutDown() {
-		System.out.println();
-		System.out.println( "Shutting down database ..." );
-		// START SNIPPET: shutdownServer
-		graphDB.shutdown();
-		// END SNIPPET: shutdownServer
-	}
-
-	// START SNIPPET: shutdownHook
-	private static void registerShutdownHook( final GraphDatabaseService graphDb ) {
-		// Registers a shutdown hook for the Neo4j instance so that it
-		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
-		// running application).
-		Runtime.getRuntime().addShutdownHook( new Thread() {
-			@Override
-			public void run() {
-				graphDb.shutdown();
-			}
-		} );
 	}
 }

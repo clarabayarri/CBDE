@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
@@ -17,6 +18,8 @@ public class QuerySet {
 
 		Long average = (long) 0;
 		List<Long> timeDifferences = new ArrayList<Long>();
+		
+		// Query 1
 		for ( int j = 0; j < 5; ++j ) {
 			Long start = System.nanoTime();
 			query1( graphDB );
@@ -29,7 +32,7 @@ public class QuerySet {
 				" in nanoseconds --- with minimum " + Collections.min( timeDifferences ) );
 		average += Collections.min(timeDifferences);
 		
-		
+		// Query 3
 		for ( int j = 0; j < 5; ++j ) {
 			Long start = System.nanoTime();
 			query3( graphDB );
@@ -42,6 +45,18 @@ public class QuerySet {
 				" in nanoseconds --- with minimum " + Collections.min( timeDifferences ) );
 		average += Collections.min(timeDifferences);
 		
+		//Query 4
+		for ( int j = 0; j < 5; ++j ) {
+			Long start = System.nanoTime();
+			query4( graphDB );
+			Long end = System.nanoTime();
+
+			timeDifferences.add( j, end - start );
+		}
+		
+		System.out.println( "Query 4 took " + timeDifferences + 
+				" in nanoseconds --- with minimum " + Collections.min( timeDifferences ) );
+		average += Collections.min(timeDifferences);
 		
 		System.out.println( "\nAverage query time " + average/4 + " in nanoseconds\n" );
 	}
@@ -78,11 +93,31 @@ public class QuerySet {
 				"WHERE (has(customer.C_MktSegment)) and (customer.C_MktSegment = '12345678901234567890123456789012') and " +
 						"(has(orders.O_OrderDate)) and (orders.O_OrderDate < " + calendar.getTime().getTime() + ") and" + 
 						"(has(lineitem.L_ShipDate)) and (lineitem.L_ShipDate > " + calendar2.getTime().getTime() + ")" + 
-				"RETURN orders.O_OrderKey, sum(lineitem.L_ExtendedPrice) as revenue, orders.O_OrderDate, orders.O_ShipPriority " +
+				"RETURN orders.O_OrderKey, sum(lineitem.L_ExtendedPrice * (1-lineitem.L_Discount)) as revenue, orders.O_OrderDate, orders.O_ShipPriority " +
 				"ORDER BY revenue DESC, orders.O_OrderDate"
 				);
 		//System.out.println( result.dumpToString() );
 		// 191 rows
+	}
+	
+	private void query4( GraphDatabaseService graphDB ) {
+
+		Calendar calendar = new GregorianCalendar(2013,3,29);
+		Calendar calendar2 = new GregorianCalendar(2014,3,30);
+		ExecutionEngine engine = new ExecutionEngine( graphDB );
+		ExecutionResult result = engine.execute( 
+				"START region = node(*) " +
+				"MATCH (region)-[:" + DataInserter.RelTypes.HAS_NATION.name() + "]->(nation)-[:" + DataInserter.RelTypes.HAS_SUPPLIER.name() + "]->(supplier)" +
+					"-[:" + DataInserter.RelTypes.SUPPLIER_HAS_PARTSUPP.name() + "]->(partsupp)-[:" + DataInserter.RelTypes.PARTSUPP_HAS_LINEITEM.name() + "]->(lineitem), " +
+					"(nation)-[:" + DataInserter.RelTypes.HAS_CUSTOMER.name() + "]->(customer)-[:" + DataInserter.RelTypes.HAS_ORDER.name() + "]->(orders)-[:" + DataInserter.RelTypes.HAS_LINEITEM.name() + "]->(lineitem)" +
+				"WHERE (has(region.R_Name)) and (region.R_Name = '12345678901234567890123456789012') and " +
+						"(has(orders.O_OrderDate)) and (orders.O_OrderDate >= " + calendar.getTime().getTime() + ") and" + 
+						"(orders.O_OrderDate < " + calendar2.getTime().getTime() + ")" + 
+				"RETURN nation.N_Name, sum(lineitem.L_ExtendedPrice * (1-lineitem.L_Discount)) as revenue " +
+				"ORDER BY revenue DESC"
+				);
+		//System.out.println( result.dumpToString() );
+		// 3 rows
 	}
 	
 }

@@ -62,7 +62,9 @@ public class DataInserter {
 		BELONGS_TO_CUSTOMER,
 		// Order - Lineitem
 		HAS_LINEITEM,
-		BELONGS_TO_ORDER
+		BELONGS_TO_ORDER,
+		// PartSupp - Lineitem
+		PARTSUPP_HAS_LINEITEM
 	}
 
 	public void initialInsert( GraphDatabaseService graphDB ) {
@@ -369,10 +371,11 @@ public class DataInserter {
 			Integer lineId = lineItemIds.get(id) + 1;
 			lineItemIds.put(id, lineId);
 			//document.put("L_OrderKey", id);
-			Integer suppId = supplierIds.get(random.nextInt(supplierIds.size()));
-			Integer partId = partSuppIds.get(suppId).get(random.nextInt(partSuppIds.get(suppId).size()));
-			lineitemNode.setProperty("L_PartKey", partId);
-			lineitemNode.setProperty("L_SuppKey", suppId);
+			int suppIndex = random.nextInt(supplierIds.size());
+			Integer suppId = supplierIds.get(suppIndex);
+			int partIndex = random.nextInt(partSuppIds.get(suppId).size());
+			Node partSupp = partSupps.get(suppId).get(partIndex);
+			partSupp.createRelationshipTo(lineitemNode, RelTypes.PARTSUPP_HAS_LINEITEM);
 			lineitemNode.setProperty("L_LineNumber", lineId);
 			lineitemNode.setProperty("L_Quantity", getRandomInteger());
 			lineitemNode.setProperty("L_ExtendedPrice", getRandomDouble(13));

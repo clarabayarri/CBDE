@@ -24,6 +24,10 @@ public class Neo4jNormalized {
     	inserter.initialInsert( graphDB );
     	
     	querySet.executeQueries( graphDB );
+    	
+    	inserter.secondInsert( graphDB );
+    	
+    	querySet.executeQueries( graphDB );
     }
     
     

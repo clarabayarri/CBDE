@@ -91,19 +91,32 @@ public class DataInserter {
 
 		Long timeDifference = endDate.getTime() - startDate.getTime();
 		System.out.println("Insertion took " + timeDifference + " milliseconds.\n");
-
-		//		for ( int i = 0; i < regions.size(); ++i ) {
-		//			System.out.print( "R_RegionKey  ---  " + regions.get(i).getProperty( "R_RegionKey" ) + "\n" );
-		//			System.out.print( "R_Name  ---  " + regions.get(i).getProperty( "R_Name" ) + "\n" );
-		//			System.out.print( "R_Comment  ---  " + regions.get(i).getProperty( "R_Comment" ) + "\n" );
-		//			System.out.print( "skip  ---  " + regions.get(i).getProperty( "skip" ) + "\n" );
-		//			for (Relationship nation : regions.get(i).getRelationships(RelTypes.HAS_NATION)) {
-		//				System.out.println("\tRelated to " + nation.getEndNode().getProperty("N_NationKey"));
-		//			}
-		//			System.out.println();
-		//		}
 	}
 
+	public void secondInsert( GraphDatabaseService graphDB ) {
+
+		System.out.println("-------- Second insertion ------");
+
+		Date startDate = new Date();
+		Transaction tx = graphDB.beginTx();
+		try {
+			insertParts( tx, graphDB );
+			insertSuppliers( tx, graphDB );
+			insertPartSuppliers( tx, graphDB );
+			insertCustomers( tx, graphDB );
+			insertOrders( tx, graphDB );
+			insertLineitems( tx, graphDB );
+			tx.success();
+		}
+		finally {
+			tx.finish();
+		}
+		Date endDate = new Date();
+
+		Long timeDifference = endDate.getTime() - startDate.getTime();
+		System.out.println("Insertion took " + timeDifference + " milliseconds.\n");
+	}
+	
 	private Integer getRandomInteger() {
 		// int must have 4 digits
 		return random.nextInt(100000 - 1000) + 1000;

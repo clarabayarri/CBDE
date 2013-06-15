@@ -30,6 +30,19 @@ public class QuerySet {
 		average += Collections.min(timeDifferences);
 		
 		
+		for ( int j = 0; j < 5; ++j ) {
+			Long start = System.nanoTime();
+			query3( graphDB );
+			Long end = System.nanoTime();
+
+			timeDifferences.add( j, end - start );
+		}
+		
+		System.out.println( "Query 3 took " + timeDifferences + 
+				" in nanoseconds --- with minimum " + Collections.min( timeDifferences ) );
+		average += Collections.min(timeDifferences);
+		
+		
 		System.out.println( "\nAverage query time " + average/4 + " in nanoseconds\n" );
 	}
 	
@@ -50,8 +63,26 @@ public class QuerySet {
 					"AVG( lineitem.L_Discount) AS avg_disc, count(*) AS count_order " +
 				"ORDER BY lineitem.L_ReturnFlag, lineitem.L_LineStatus"
 				);
-		System.out.println( result.dumpToString() );
+		//System.out.println( result.dumpToString() );
 		
+	}
+	
+	private void query3( GraphDatabaseService graphDB ) {
+
+		Calendar calendar = new GregorianCalendar(2013,3,29);
+		Calendar calendar2 = new GregorianCalendar(2013,3,30);
+		ExecutionEngine engine = new ExecutionEngine( graphDB );
+		ExecutionResult result = engine.execute( 
+				"START customer = node(*) " +
+				"MATCH (customer)-[:" + DataInserter.RelTypes.HAS_ORDER.name() + "]->(orders)-[:" + DataInserter.RelTypes.HAS_LINEITEM.name() + "]->(lineitem)" +
+				"WHERE (has(customer.C_MktSegment)) and (customer.C_MktSegment = '12345678901234567890123456789012') and " +
+						"(has(orders.O_OrderDate)) and (orders.O_OrderDate < " + calendar.getTime().getTime() + ") and" + 
+						"(has(lineitem.L_ShipDate)) and (lineitem.L_ShipDate > " + calendar2.getTime().getTime() + ")" + 
+				"RETURN orders.O_OrderKey, sum(lineitem.L_ExtendedPrice) as revenue, orders.O_OrderDate, orders.O_ShipPriority " +
+				"ORDER BY revenue DESC, orders.O_OrderDate"
+				);
+		//System.out.println( result.dumpToString() );
+		// 191 rows
 	}
 	
 }

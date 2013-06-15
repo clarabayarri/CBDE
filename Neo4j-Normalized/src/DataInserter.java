@@ -40,7 +40,7 @@ public class DataInserter {
 
 	Relationship relationship;
 
-	private static enum RelTypes implements RelationshipType
+	public static enum RelTypes implements RelationshipType
 	{
 		// Region - Nation
 		BELONGS_TO_REGION,
@@ -171,7 +171,7 @@ public class DataInserter {
 			int index = random.nextInt(regionIds.size());
 			Node regionNode = regions.get(index);
 			regionNode.createRelationshipTo(nationNode, RelTypes.HAS_NATION);
-			nationNode.createRelationshipTo(regionNode, RelTypes.BELONGS_TO_REGION);
+			//nationNode.createRelationshipTo(regionNode, RelTypes.BELONGS_TO_REGION);
 
 			nationNode.setProperty("N_Comment", getRandomString(160));
 			nationNode.setProperty("skip", getRandomString(64));
@@ -230,7 +230,7 @@ public class DataInserter {
 			int index = random.nextInt(nationIds.size());
 			Node nationNode = nations.get(index);
 			nationNode.createRelationshipTo(supplierNode, RelTypes.HAS_SUPPLIER);
-			supplierNode.createRelationshipTo(nationNode, RelTypes.BELONGS_TO_NATION);
+			//supplierNode.createRelationshipTo(nationNode, RelTypes.BELONGS_TO_NATION);
 
 			supplierNode.setProperty("S_Phone", getRandomString(18));
 			supplierNode.setProperty("S_AcctBal", getRandomDouble(13));
@@ -260,12 +260,12 @@ public class DataInserter {
 			//document.put("PS_PartKey", partid);
 			Node part = parts.get(partIndex);
 			part.createRelationshipTo(partsuppNode, RelTypes.PART_HAS_PARTSUPP);
-			partsuppNode.createRelationshipTo(part, RelTypes.BELONGS_TO_PART);
+			//partsuppNode.createRelationshipTo(part, RelTypes.BELONGS_TO_PART);
 
 			// PS_PartKey
 			Node supplier = suppliers.get(suppIndex);
 			supplier.createRelationshipTo(partsuppNode, RelTypes.SUPPLIER_HAS_PARTSUPP);
-			partsuppNode.createRelationshipTo(supplier, RelTypes.BELONGS_TO_SUPPLIER);
+			//partsuppNode.createRelationshipTo(supplier, RelTypes.BELONGS_TO_SUPPLIER);
 
 			partsuppNode.setProperty("PS_PartKey", partid);
 			partsuppNode.setProperty("PS_AvailQty", getRandomInteger());
@@ -296,7 +296,7 @@ public class DataInserter {
 
 			Node nation = nations.get(random.nextInt(nationIds.size()));
 			nation.createRelationshipTo(customerNode, RelTypes.HAS_CUSTOMER);
-			customerNode.createRelationshipTo(nation, RelTypes.CUSTOMER_BELONGS_TO_NATION);
+			//customerNode.createRelationshipTo(nation, RelTypes.CUSTOMER_BELONGS_TO_NATION);
 
 			customerNode.setProperty("C_Phone", getRandomString(64));
 			customerNode.setProperty("C_AcctBal", getRandomDouble(13));
@@ -328,7 +328,7 @@ public class DataInserter {
 			int index = random.nextInt(customerIds.size());
 			Node customer = customers.get(index);
 			customer.createRelationshipTo(orderNode, RelTypes.HAS_ORDER);
-			orderNode.createRelationshipTo(customer, RelTypes.BELONGS_TO_CUSTOMER);
+			//orderNode.createRelationshipTo(customer, RelTypes.BELONGS_TO_CUSTOMER);
 
 			orderNode.setProperty("O_OrderStatus", getRandomString(64));
 			orderNode.setProperty("O_TotalPrice", getRandomInteger());
@@ -361,7 +361,7 @@ public class DataInserter {
 			int index = random.nextInt(orderIds.size());
 			Node order = orders.get(index);
 			order.createRelationshipTo(lineitemNode, RelTypes.HAS_LINEITEM);
-			lineitemNode.createRelationshipTo(order, RelTypes.BELONGS_TO_ORDER);
+			//lineitemNode.createRelationshipTo(order, RelTypes.BELONGS_TO_ORDER);
 			
 			Integer id = orderIds.get(index);
 
